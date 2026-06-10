@@ -2,7 +2,7 @@ import { ServiceCallResult } from '@/core/object/service-call-result';
 import type { BaseSong } from '@/core/object/song';
 import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
-import type { AtProtoModel } from '@/core/storage/wrapper';
+import type { AtProtoModel, AtProtoOAuthSession } from '@/core/storage/wrapper';
 import {
 	ATPROTO_OAUTH_CONNECT_URL,
 	ATPROTO_OAUTH_ORIGIN,
@@ -95,12 +95,12 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	public async storeOAuthSession(session: {
 		sessionID: string;
 		sessionName: string;
-		oauthSession: unknown;
+		oauthSession: AtProtoOAuthSession;
 	}): Promise<void> {
 		await this.storage.set({
 			sessionID: session.sessionID,
 			sessionName: session.sessionName,
-			oauthSession: session.oauthSession as (AtProtoModel & { oauthSession: unknown })['oauthSession'],
+			oauthSession: session.oauthSession,
 		});
 	}
 
