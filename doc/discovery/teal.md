@@ -38,8 +38,8 @@ The record key is a TID (timestamp ID). Records are written via
 ## authentication strategy
 
 AT Protocol OAuth is designed for web apps. The extension can't host a client metadata document
-(B Bluesky's auth server needs to fetch it from a public URL), so we use `webscrobbler.com` as
-the OAuth entry point and relay the session back to the extension.
+because Bluesky's auth server needs to fetch it from a public URL, so we use a public static site
+as the OAuth entry point and relay the session back to the extension.
 
 ### key insight: atcute sessions are plain JSON
 
@@ -75,21 +75,25 @@ inside the extension. The redirect itself is just a browser navigation (Bluesky'
 the browser "go here"), so `chrome-extension://` redirect URIs might work for the redirect --
 but we're not confident Bluesky accepts non-https redirect URI schemes. Uncharted territory.
 
-### option A: webscrobbler.com-mediated OAuth (recommended)
+### option A: hosted-site-mediated OAuth
 
-Host the client metadata and the OAuth flow on `webscrobbler.com`. The static site handles the
-OAuth dance, then sends the JSON session to the extension.
+Host the client metadata and the OAuth flow on a public static site. For production, that can be
+`webscrobbler.com`. For development, use the owned `rektide.github.io` fork first. The static site
+handles the OAuth dance, then sends the JSON session to the extension.
 
 Client metadata at `webscrobbler.com/client-metadata.json`:
 ```json
 {
   "client_id": "https://webscrobbler.com/client-metadata.json",
   "client_name": "Web Scrobbler",
+  "client_uri": "https://webscrobbler.com",
   "redirect_uris": ["https://webscrobbler.com/oauth/callback"],
-  "scope": "atproto",
+  "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
-  "token_endpoint_auth_method": "none"
+  "token_endpoint_auth_method": "none",
+  "application_type": "web",
+  "dpop_bound_access_tokens": true
 }
 ```
 
@@ -132,11 +136,12 @@ Cons:
 - The web page needs to know the extension ID (hardcode from Chrome Web Store listing)
 - Dev builds with random extension IDs won't match -- need a separate mechanism for development
 
-#### communication option 2: content script reads localStorage directly (cross-browser, simplest)
+#### communication option 2: content script reads localStorage directly (cross-browser, possible)
 
-Content scripts share the page's DOM, including `window.localStorage`. atcute stores sessions in
-localStorage under a known key format (`atcute-oauth:sessions`). The content script doesn't need
-any cooperation from the page's JavaScript:
+Content scripts share the page's origin storage APIs in the OAuth callback tab. atcute stores
+sessions in localStorage under `${storageName}:sessions`; the default is `atcute-oauth:sessions`.
+The content script doesn't need cooperation from the page's JavaScript if we keep that storage name
+stable:
 
 ```js
 // content script matching https://webscrobbler.com/oauth/*
@@ -151,12 +156,12 @@ if (raw) {
 
 Pros:
 - Cross-browser (works in Chrome, Firefox, Safari)
-- No cooperation needed from the webscrobbler.com JavaScript
+- No cooperation needed from the hosted site's JavaScript
 - No `externally_connectable`, no `postMessage`, no iframes
 - The content script is already loaded -- just read localStorage and relay
 
 Cons:
-- Content script needs to know the atcute localStorage key format (fragile coupling)
+- Content script needs to know the atcute storage name and localStorage schema (fragile coupling)
 - The content script needs to detect when the OAuth flow is complete (watch for URL changes
   or poll localStorage)
 - Requires `content_scripts` entry in manifest for `webscrobbler.com/oauth/*`
@@ -167,11 +172,11 @@ The callback page explicitly sends the session to the content script:
 
 ```js
 // on webscrobbler.com/oauth/callback (page JS)
-window.postMessage({ type: 'oauth-session', session }, '*');
+window.postMessage({ type: 'oauth-session', session }, location.origin);
 
 // content script on webscrobbler.com/oauth/*
 window.addEventListener('message', (event) => {
-  if (event.data?.type === 'oauth-session') {
+  if (event.origin === location.origin && event.data?.type === 'oauth-session') {
     browser.runtime.sendMessage(event.data);
   }
 });
@@ -182,11 +187,13 @@ Pros:
 - Explicit -- the page decides what to send and when
 - No coupling to atcute's internal storage format
 - Works with content scripts in all browsers
+- Works with development builds because the page doesn't need to know the extension ID
 
 Cons:
 - Requires the webscrobbler.com callback page to include the `postMessage` call (a few lines of JS)
-- Any script on the page can listen (`'*'` origin) -- low risk since it's our own page, but not ideal
-- Can be scoped with `event.origin` check for safety
+- Any script on the page can listen if `'*'` is used as the target origin. Use the site's exact
+  origin instead.
+- The content script must validate `event.origin` before relaying the session.
 
 #### communication option 4: extension page iframes webscrobbler.com (possible but problematic)
 
@@ -232,31 +239,70 @@ Cons:
 - Margin uses this because their backend sets the cookie. For us, client-side JS sets it,
   which is a different threat model
 
-#### recommended: option 1 (`externally_connectable`) for Chrome, option 2 (localStorage) as fallback
+#### production option: `externally_connectable` for Chrome, `postMessage` or localStorage fallback
 
-Chrome is the primary target. `externally_connectable` is the cleanest mechanism -- one line of
-code on the web page, one listener in the background script. For Firefox or dev builds where the
-extension ID isn't known, the content script reads localStorage directly. Both paths end up in
-the same place: the background script receives the JSON session and stores it in `browser.storage`.
+Chrome is the primary target. `externally_connectable` is the cleanest production mechanism -- one
+line of code on the web page, one listener in the background script. For Firefox and development
+builds where the extension ID isn't known, use `window.postMessage` through a content script. A
+localStorage reader can stay as a fallback if the callback page can't run our relay code.
+
+All paths should end in the same place: the background script receives the JSON session and stores
+it in `browser.storage.local` under the `TealFm` namespace.
 
 ### flow (putting it all together)
 
 1. User clicks "Connect Bluesky" in extension options
-2. Extension opens `webscrobbler.com/oauth/connect` in a new tab
+2. Extension opens `webscrobbler.com/oauth/connect` or `https://rektide.github.io/oauth/connect`
+   in a new tab
 3. That page runs atcute's `createAuthorizationUrl()`, redirects to Bluesky
 4. User authorizes
-5. Bluesky redirects to `webscrobbler.com/oauth/callback`
-6. Callback page calls `finalizeAuthorization()`, gets session as JSON in localStorage
-7. Callback page sends session to extension via `externally_connectable` (Chrome)
-   OR content script reads localStorage and relays to background (Firefox/fallback)
+5. Bluesky redirects to the matching hosted callback URL
+6. Callback page parses `location.hash`, calls `finalizeAuthorization()`, and gets the session
+7. Callback page sends session to extension via `postMessage` for development/fallback, or
+   `externally_connectable` for Chrome production
 8. Background stores session in `browser.storage`
 9. Background creates an `OAuthUserAgent` from the stored JWK + tokens
 10. All record writes go through `OAuthUserAgent.handle()` + atcute `Client`
 
+### recommended first implementation flow
+
+Start by proving OAuth handoff before implementing scrobbling. The risky part is moving an AT
+Protocol OAuth session from a public web page into a Manifest V3 extension without depending on a
+stable extension ID.
+
+Use the `rektide.github.io` fork first:
+
+1. Host `public/oauth-client-metadata.json` from `~/src/web-scrobbler-github` with
+   `client_id: "https://rektide.github.io/oauth-client-metadata.json"` and
+   `redirect_uris: ["https://rektide.github.io/oauth/callback"]`.
+2. Add `src/routes/oauth/connect.tsx` to collect a Bluesky handle, configure atcute, call
+   `createAuthorizationUrl()`, then navigate to the returned URL.
+3. Add `src/routes/oauth/callback.tsx` to configure atcute with the same metadata, parse
+   `new URLSearchParams(location.hash.slice(1))`, call `finalizeAuthorization()`, scrub the hash,
+   and call `window.postMessage({ type: 'web-scrobbler-teal/oauth-session', session }, location.origin)`.
+4. In the extension content script, special-case `https://rektide.github.io/oauth/*` before normal
+   connector loading. Listen for the postMessage event, validate `event.origin`, and relay the
+   session with `browser.runtime.sendMessage` / `sendContentMessage`.
+5. In the background script, validate `sender.url`, then store `{ sessionID, sessionName,
+   oauthSession }` in `browser.storage.local` under a new `TealFm` storage namespace.
+6. Add a minimal `TealFm` account row that opens `https://rektide.github.io/oauth/connect` and shows
+   the stored DID/handle after the callback succeeds.
+7. After the handoff works, implement the `TealScrobbler` write path with one record write to
+   `fm.teal.alpha.feed.play` from a test song.
+
+This flow should use `postMessage` first. Add `externally_connectable` only after the hosted flow
+works and the production extension ID is known.
+
+One unresolved implementation detail: atcute's `OAuthUserAgent.getSession()` refresh path reads from
+its configured localStorage database. A Manifest V3 background service worker doesn't have normal
+page localStorage. For the first scrobble spike, instantiate `OAuthUserAgent` directly from the
+stored raw session. Before shipping, either persist refreshed sessions back into extension storage or
+wrap atcute's refresh path so it doesn't depend on page localStorage in the service worker.
+
 ### option B: direct OAuth in the extension (investigate later)
 
-If Bluesky's auth server accepts `chrome-extension://` redirect URIs, we can skip the
-webscrobbler.com relay entirely. The extension would run atcute directly, with the callback
+If Bluesky's auth server accepts `chrome-extension://` redirect URIs, we can skip the hosted-site
+relay entirely. The extension would run atcute directly, with the callback
 page inside the extension. This is simpler but untested.
 
 Client metadata would need to list the Chrome Web Store extension ID and AMO extension ID
@@ -297,7 +343,7 @@ using the page's cookie context. The extension never holds DPoP keys or ATProto 
 `@atcute/client`) is preferred over `@atproto/oauth-client-browser` for several reasons:
 
 - lightweight, tree-shakeable packages
-- built-in IndexedDB session storage (works in extension background scripts)
+- plain JSON/JWK session objects that can cross extension messaging boundaries
 - DPoP key management handled internally
 - used in production by multiple AT Protocol apps
 
@@ -307,6 +353,10 @@ Key packages:
 - `@atcute/client` -- XRPC client for making authenticated calls
 - `@atcute/identity-resolver` -- DID/handle resolution
 - `@atcute/oauth-crypto` -- DPoP key generation, JWK handling
+
+atcute's browser OAuth package stores its own database in page localStorage, not IndexedDB. That is
+good for the hosted callback page, but it means the extension background script should not assume
+atcute can refresh sessions from its default storage in a Manifest V3 service worker.
 
 ### fallback: @atproto/oauth-client-browser
 
@@ -340,7 +390,9 @@ We implement a `TealScrobbler` extending `BaseScrobbler<'TealFm'>` that:
 
 - Uses atcute OAuth for `getAuthUrl()` / `getSession()`
 - Maps `BaseSong` fields to `fm.teal.alpha.feed.play` record fields
-- Writes records via `com.atproto.repo.createRecord` in `scrobble()` and `sendNowPlaying()`
+- Writes records via `com.atproto.repo.createRecord` in `scrobble()`
+- Treats `sendNowPlaying()`, `sendPaused()`, and `sendResumedPlaying()` as no-ops unless teal.fm
+  gains a separate now-playing record type
 - Registers itself in the `registeredScrobblers` array in `scrobble-service.ts`
 
 ### song field mapping
@@ -350,17 +402,18 @@ We implement a `TealScrobbler` extending `BaseScrobbler<'TealFm'>` that:
 | `track` | `trackName` |
 | `artist` | `artists[0].artistName` |
 | `album` | `releaseName` |
-| `duration` | `duration` (convert from ms to seconds) |
+| `duration` | `duration` (already seconds in `BaseSong.getDuration()`) |
 | `originUrl` | `originUrl` |
-| `connectorLabel` | mapped to `musicServiceBaseDomain` |
+| `connector.label` / `originUrl` | derive `musicServiceBaseDomain` |
+| `metadata.startTimestamp` | `playedTime` |
 
 ### storage
 
 The `TealFm` storage namespace holds:
 
-- OAuth session reference (the atcute IndexedDB stores the actual tokens)
 - `sessionID` -- the user's DID
 - `sessionName` -- the user's handle
+- `oauthSession` -- the raw atcute session JSON, including DPoP JWK and tokens
 
 ## lexicon comparison: teal.fm vs rocksky
 
@@ -433,11 +486,15 @@ Rocksky defines additional record types beyond scrobbles. Teal.fm does not have 
 
 ## open questions
 
-- **Client metadata hosting:** Static JSON file on GitHub Pages. Can likely PR into
-  `web-scrobbler/web-scrobbler.github.io` upstream since Bluesky fits their multi-service model.
-  Fallback: host on our own fork's GitHub Pages.
+- **Client metadata hosting:** Start with `rektide.github.io` because that fork is owned and can be
+  changed quickly. Later, PR the same static JSON and OAuth pages into
+  `web-scrobbler/web-scrobbler.github.io` if upstream wants Bluesky support.
+- **Session refresh in MV3:** atcute can instantiate an `OAuthUserAgent` from raw session JSON, but
+  its refresh path expects its localStorage database. We need a storage adapter or explicit refreshed
+  session persistence before production.
 - **Scrobble timing:** teal.fm uses "play half the track duration, up to 4 minutes" as the scrobble
-  threshold. The upstream extension has its own timing logic. We need to ensure they align.
+  threshold. Upstream already defaults to 50% with a 240 second cap, so no timing change should be
+  needed for the first implementation.
 - **Now playing vs. scrobbled:** The upstream extension sends both "now playing" and "scrobbled"
   events. teal.fm records are single play records with a timestamp. We may want to write a play
   record only on scrobble, not on now-playing.
@@ -450,16 +507,24 @@ Rocksky defines additional record types beyond scrobbles. Teal.fm does not have 
 ## project structure (planned additions)
 
 ```
+manifest.config.ts             # Add Teal OAuth host match and optional externally_connectable
+vite.configs.ts                # Add any extra extension UI entry only if needed
+src/core/content/main.ts       # Special-case the OAuth callback URL before connector loading
+src/core/background/main.ts    # Receive and store the OAuth session
+src/core/storage/browser-storage.ts
+src/core/storage/wrapper.ts    # Add TealFm storage namespace and model
 src/core/scrobbler/teal/
   teal-scrobbler.ts          # BaseScrobbler implementation
   teal-types.ts              # play record type definitions
   atcute-client.ts           # atcute OAuth + Client setup
   field-mapping.ts           # BaseSong -> play record mapping
-src/ui/options/components/
-  teal-account.tsx           # Bluesky account connection UI
-src/entrypoints/
-  oauth-callback.html        # OAuth redirect target
-  oauth-callback.ts          # finalizeAuthorization() handler
+src/ui/options/components/accounts.tsx
+                           # Add a TealFm row to the existing accounts UI
+
+~/src/web-scrobbler-github/public/oauth-client-metadata.json
+~/src/web-scrobbler-github/src/routes/oauth/connect.tsx
+~/src/web-scrobbler-github/src/routes/oauth/callback.tsx
+                           # Hosted OAuth entry point and callback
 ```
 
 ## references
