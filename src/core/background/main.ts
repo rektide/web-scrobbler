@@ -48,6 +48,7 @@ import {
 } from './scrobble';
 import scrobbleService from '../object/scrobble-service';
 import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
+import { initAtcute } from '@/core/scrobbler/atproto/atcute-client';
 import { fetchListenBrainzProfile } from '@/util/util';
 
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
@@ -601,6 +602,7 @@ function onStartup() {
 
 	setRegexDefaults();
 	updateVersionInStorage();
+	initAtcute();
 	bindScrobblers().then((bound) => {
 		if (!bound) {
 			console.warn('No scrobblers are bound');

@@ -1,4 +1,43 @@
-import { OAuthUserAgent, type Session } from '@atcute/oauth-browser-client';
+import {
+	configureOAuth,
+	OAuthUserAgent,
+	type Session,
+} from '@atcute/oauth-browser-client';
+import {
+	CompositeDidDocumentResolver,
+	LocalActorResolver,
+	PlcDidDocumentResolver,
+	WebDidDocumentResolver,
+	XrpcHandleResolver,
+} from '@atcute/identity-resolver';
+import { initLocalStorageShim } from './localstorage-shim';
+
+let configured = false;
+
+export async function initAtcute(): Promise<void> {
+	if (configured) return;
+	configured = true;
+
+	await initLocalStorageShim();
+
+	configureOAuth({
+		metadata: {
+			client_id: 'https://rektide.github.io/oauth-client-metadata.json',
+			redirect_uri: 'https://rektide.github.io/oauth/callback',
+		},
+		identityResolver: new LocalActorResolver({
+			handleResolver: new XrpcHandleResolver({
+				serviceUrl: 'https://public.api.bsky.app',
+			}),
+			didDocumentResolver: new CompositeDidDocumentResolver({
+				methods: {
+					plc: new PlcDidDocumentResolver(),
+					web: new WebDidDocumentResolver(),
+				},
+			}),
+		}),
+	});
+}
 
 export class AtProtoClient {
 	private agent: OAuthUserAgent;

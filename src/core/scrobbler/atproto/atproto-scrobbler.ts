@@ -8,7 +8,7 @@ import type {
 } from '@/core/storage/wrapper';
 import type { Session } from '@atcute/oauth-browser-client';
 import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
-import { createAtProtoClient, AtProtoClient } from './atcute-client';
+import { createAtProtoClient, AtProtoClient, initAtcute } from './atcute-client';
 import { mapSongToRecord } from './field-mapping';
 
 const ATPROTO_OAUTH_CONNECT_URL = 'https://rektide.github.io/oauth/connect';
@@ -153,6 +153,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	}
 
 	public async getAtProtoClient(): Promise<AtProtoClient | null> {
+		await initAtcute();
 		const session = await this.getOAuthSession();
 		if (!session) {
 			return null;
