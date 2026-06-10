@@ -96,6 +96,7 @@ export default function Accounts() {
 			<ScrobblerDisplay label="Maloja" />
 			<ScrobblerDisplay label="Webhook" />
 			<ScrobblerDisplay label="Pleroma" />
+			<ScrobblerDisplay label="AtProto" />
 		</>
 	);
 }
