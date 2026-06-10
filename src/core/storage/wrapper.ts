@@ -69,27 +69,9 @@ export type ArrayProperty = {
 
 export type ArrayProperties = ArrayProperty[];
 
-export interface AtProtoOAuthSession {
-	dpopKey: {
-		alg: string;
-		kty: string;
-		crv: string;
-		x: string;
-		y: string;
-		d: string;
-	} & Record<string, unknown>;
-	info: {
-		sub: string;
-		aud: string;
-		server: Record<string, unknown>;
-	} & Record<string, unknown>;
-	token: {
-		access: string;
-		refresh?: string;
-		type: string;
-		expires_at?: number;
-	} & Record<string, unknown>;
-}
+import type { Session } from '@atcute/oauth-browser-client';
+
+export type AtProtoOAuthSession = Session;
 
 export interface AtProtoAuthStarted {
 	isAuthStarted?: boolean;

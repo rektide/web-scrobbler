@@ -4,14 +4,14 @@ import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
 import type {
 	AtProtoModel,
-	AtProtoOAuthSession,
 	AtProtoLexiconConfig,
-	AT_PROTO_LEXICONS,
 } from '@/core/storage/wrapper';
+import type { Session } from '@atcute/oauth-browser-client';
 import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
 import { createAtProtoClient, AtProtoClient } from './atcute-client';
-import { ATPROTO_OAUTH_CONNECT_URL } from './atproto-types';
 import { mapSongToRecord } from './field-mapping';
+
+const ATPROTO_OAUTH_CONNECT_URL = 'https://rektide.github.io/oauth/connect';
 
 const DEFAULT_LEXICONS: AtProtoLexiconConfig = {
 	teal: true,
@@ -132,7 +132,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	public async storeOAuthSession(session: {
 		sessionID: string;
 		sessionName: string;
-		oauthSession: AtProtoOAuthSession;
+		oauthSession: Session;
 	}): Promise<void> {
 		const data = await this.storage.get();
 		const lexicons = (data && 'lexicons' in data && data.lexicons) || DEFAULT_LEXICONS;
@@ -144,7 +144,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		});
 	}
 
-	public async getOAuthSession(): Promise<AtProtoOAuthSession | null> {
+	public async getOAuthSession(): Promise<Session | null> {
 		const data = await this.storage.get();
 		if (!data || !('oauthSession' in data)) {
 			return null;

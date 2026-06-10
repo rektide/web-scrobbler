@@ -5,7 +5,7 @@ import type { ServiceCallResult } from '@/core/object/service-call-result';
 import type { CloneableSong } from '@/core/object/song';
 import type { ScrobblerSongInfo } from '@/core/scrobbler/base-scrobbler';
 import type { ManagerTab } from '@/core/storage/wrapper';
-import type { AtProtoOAuthSession } from '@/core/storage/wrapper';
+import type { Session } from '@atcute/oauth-browser-client';
 import browser from 'webextension-polyfill';
 
 /**
@@ -128,7 +128,7 @@ interface ContentCommunications {
 			session: {
 				sessionID: string;
 				sessionName: string;
-				oauthSession: AtProtoOAuthSession;
+				oauthSession: Session;
 			};
 		};
 		response: void;

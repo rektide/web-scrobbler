@@ -1,12 +1,11 @@
-import { OAuthUserAgent } from '@atcute/oauth-browser-client';
-import type { AtProtoOAuthSession } from '@/core/storage/wrapper';
+import { OAuthUserAgent, type Session } from '@atcute/oauth-browser-client';
 
 export class AtProtoClient {
 	private agent: OAuthUserAgent;
 	public readonly did: string;
 
-	constructor(session: AtProtoOAuthSession) {
-		this.agent = new OAuthUserAgent(session as unknown as ConstructorParameters<typeof OAuthUserAgent>[0]);
+	constructor(session: Session) {
+		this.agent = new OAuthUserAgent(session);
 		this.did = session.info.sub;
 	}
 
@@ -14,7 +13,6 @@ export class AtProtoClient {
 		collection: string,
 		record: Record<string, unknown>,
 	): Promise<{ uri: string; cid: string }> {
-		const pdsUrl = this.agent.session.info.aud;
 		const response = await this.agent.handle(
 			`/xrpc/com.atproto.repo.createRecord`,
 			{
@@ -34,8 +32,6 @@ export class AtProtoClient {
 	}
 }
 
-export async function createAtProtoClient(
-	session: AtProtoOAuthSession,
-): Promise<AtProtoClient> {
+export function createAtProtoClient(session: Session): AtProtoClient {
 	return new AtProtoClient(session);
 }

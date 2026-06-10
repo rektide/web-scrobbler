@@ -1,6 +1,6 @@
 import { sendContentMessage } from '@/util/communication';
-import { ATPROTO_OAUTH_ORIGIN } from '@/core/scrobbler/atproto/atproto-types';
 
+const ATPROTO_OAUTH_ORIGIN = 'https://rektide.github.io';
 const OAUTH_MESSAGE_TYPE = 'web-scrobbler-teal/oauth-session';
 
 export function atprotoOAuthListen(): void {
