@@ -35,6 +35,10 @@
   },
   "homepage": "https://webscrobbler.com/",
   "dependencies": {
+    "@atcute/client": "^5.1.1",
+    "@atcute/identity-resolver": "^2.0.1",
+    "@atcute/oauth-browser-client": "^4.0.1",
+    "@atcute/oauth-crypto": "^1.0.1",
     "@web-scrobbler/metadata-filter": "3.2.0",
     "blueimp-md5": "2.19.0",
     "stylelint": "16.24.0",

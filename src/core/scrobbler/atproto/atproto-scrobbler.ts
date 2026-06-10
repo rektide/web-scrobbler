@@ -3,9 +3,9 @@ import type { BaseSong } from '@/core/object/song';
 import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
 import type { AtProtoModel, AtProtoOAuthSession } from '@/core/storage/wrapper';
+import { createAtProtoClient, AtProtoClient } from './atcute-client';
 import {
 	ATPROTO_OAUTH_CONNECT_URL,
-	ATPROTO_OAUTH_ORIGIN,
 } from './atproto-types';
 
 export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
@@ -58,10 +58,43 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	}
 
 	public async scrobble(
-		_songs: BaseSong[],
+		songs: BaseSong[],
 		_currentlyPlaying: boolean,
 	): Promise<ServiceCallResult[]> {
-		return Promise.resolve([ServiceCallResult.RESULT_OK]);
+		const client = await this.getAtProtoClient();
+		if (!client) {
+			return new Array<ServiceCallResult>(songs.length).fill(
+				ServiceCallResult.ERROR_AUTH,
+			);
+		}
+
+		const results: ServiceCallResult[] = [];
+		for (const song of songs) {
+			try {
+				const record = {
+					trackName: song.getTrack() ?? '',
+					artists: song.getArtist()
+						? [{ artistName: song.getArtist()! }]
+						: undefined,
+					releaseName: song.getAlbum() || undefined,
+					duration: song.getDuration() || undefined,
+					originUrl: song.getOriginUrl() || undefined,
+					playedTime: song.metadata.startTimestamp
+						? new Date(song.metadata.startTimestamp * 1000).toISOString()
+						: new Date().toISOString(),
+				};
+
+				await client.createRecord(
+					'fm.teal.alpha.feed.play',
+					record as Record<string, unknown>,
+				);
+				results.push(ServiceCallResult.RESULT_OK);
+			} catch {
+				results.push(ServiceCallResult.ERROR_OTHER);
+			}
+		}
+
+		return results;
 	}
 
 	public async toggleLove(): Promise<ServiceCallResult | Record<string, never>> {
@@ -104,11 +137,19 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		});
 	}
 
-	public async getOAuthSession(): Promise<unknown | null> {
+	public async getOAuthSession(): Promise<AtProtoOAuthSession | null> {
 		const data = await this.storage.get();
 		if (!data || !('oauthSession' in data)) {
 			return null;
 		}
 		return data.oauthSession ?? null;
+	}
+
+	public async getAtProtoClient(): Promise<AtProtoClient | null> {
+		const session = await this.getOAuthSession();
+		if (!session) {
+			return null;
+		}
+		return createAtProtoClient(session);
 	}
 }
