@@ -69,6 +69,40 @@ export type ArrayProperty = {
 
 export type ArrayProperties = ArrayProperty[];
 
+export interface AtProtoOAuthSession {
+	dpopKey: {
+		alg: 'ES256';
+		kty: 'EC';
+		crv: 'P-256';
+		x: string;
+		y: string;
+		d: string;
+	};
+	info: {
+		sub: string;
+		aud: string;
+		server: Record<string, unknown>;
+	};
+	token: {
+		access: string;
+		refresh: string;
+		type: 'Bearer';
+		expires_at: number;
+	};
+}
+
+export interface AtProtoAuthStarted {
+	isAuthStarted?: boolean;
+}
+
+export interface AtProtoAuthFinished {
+	sessionID?: string;
+	sessionName?: string;
+	oauthSession?: AtProtoOAuthSession;
+}
+
+export type AtProtoModel = AtProtoAuthStarted | AtProtoAuthFinished;
+
 export interface ScrobblerModels {
 	LastFM?: { token?: string } | { sessionID?: string; sessionName?: string };
 	LibreFM?: { token?: string } | { sessionID?: string; sessionName?: string };
@@ -76,6 +110,7 @@ export interface ScrobblerModels {
 	Maloja?: Properties;
 	Webhook?: WebhookModel;
 	Pleroma?: Properties;
+	AtProto?: AtProtoModel;
 }
 
 export interface ManagerTab {
