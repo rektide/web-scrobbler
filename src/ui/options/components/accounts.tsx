@@ -122,12 +122,37 @@ function ScrobblerDisplay(props: { label: ScrobblerLabel }) {
 	});
 	const [showLocalProps, setShowLocalProps] = createSignal(false);
 
+	const POLL_INTERVAL = 150;
+	const POLL_ATTEMPTS = 4;
+
+	const pollForSession = async () => {
+		const scrobbler = rawScrobbler();
+		if (!scrobbler) return;
+
+		for (let i = 0; i < POLL_ATTEMPTS; i++) {
+			try {
+				await scrobbler.getSession();
+				setSession.refetch();
+				setProfileUrl.refetch();
+				return;
+			} catch {
+				if (i < POLL_ATTEMPTS - 1) {
+					await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+				}
+			}
+		}
+	};
+
 	const onFocus = async () => {
 		try {
 			if (await rawScrobbler()?.isReadyForGrantAccess()) {
-				await rawScrobbler()?.getSession();
-				setSession.refetch();
-				setProfileUrl.refetch();
+				if (rawScrobbler()?.getLabel() === 'AtProto') {
+					await pollForSession();
+				} else {
+					await rawScrobbler()?.getSession();
+					setSession.refetch();
+					setProfileUrl.refetch();
+				}
 			}
 		} catch (err) {
 			debugLog(
