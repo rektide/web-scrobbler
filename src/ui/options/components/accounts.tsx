@@ -1,6 +1,8 @@
 import { t } from '@/util/i18n';
 import type { Scrobbler, ScrobblerLabel } from '@/core/object/scrobble-service';
 import ScrobbleService from '@/core/object/scrobble-service';
+import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
+import { AT_PROTO_LEXICONS } from '@/core/storage/wrapper';
 import {
 	For,
 	Show,
@@ -10,6 +12,7 @@ import {
 	createResource,
 	createSignal,
 	onCleanup,
+	onMount,
 } from 'solid-js';
 import styles from './components.module.scss';
 import browser from 'webextension-polyfill';
@@ -220,6 +223,9 @@ function ScrobblerDisplay(props: { label: ScrobblerLabel }) {
 					</div>
 				</Match>
 			</Switch>
+			<Show when={rawScrobbler()?.getLabel() === 'AtProto' && !session.error && session()}>
+				<AtProtoLexiconCheckboxes />
+			</Show>
 			<Switch>
 				<Match
 					when={
@@ -267,6 +273,42 @@ function SignedOut(props: { scrobbler: Scrobbler | null }) {
 				{t('accountsSignIn')}
 			</button>
 		</>
+	);
+}
+
+function AtProtoLexiconCheckboxes() {
+	const scrobbler = createMemo(() =>
+		ScrobbleService.getScrobblerByLabel('AtProto') as AtProtoScrobbler | null,
+	);
+	const [lexicons, setLexicons] = createSignal<Record<string, boolean>>({});
+
+	onMount(async () => {
+		if (scrobbler()) {
+			const config = await scrobbler()!.getEnabledLexicons();
+			setLexicons(config);
+		}
+	});
+
+	return (
+		<div style={{ 'margin-top': '0.5rem' }}>
+			<h3>Scrobble to:</h3>
+			<For each={AT_PROTO_LEXICONS}>
+				{(lexicon) => (
+					<label style={{ display: 'block', 'margin-top': '0.25rem' }}>
+						<input
+							type="checkbox"
+							checked={lexicons()[lexicon.id] ?? true}
+							onChange={(e) => {
+								const checked = e.currentTarget.checked;
+								setLexicons((prev) => ({ ...prev, [lexicon.id]: checked }));
+								scrobbler()?.setLexiconEnabled(lexicon.id, checked);
+							}}
+						/>
+						{` ${lexicon.label}`}
+					</label>
+				)}
+			</For>
+		</div>
 	);
 }
 

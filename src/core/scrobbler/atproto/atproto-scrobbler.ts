@@ -2,11 +2,21 @@ import { ServiceCallResult } from '@/core/object/service-call-result';
 import type { BaseSong } from '@/core/object/song';
 import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
-import type { AtProtoModel, AtProtoOAuthSession } from '@/core/storage/wrapper';
+import type {
+	AtProtoModel,
+	AtProtoOAuthSession,
+	AtProtoLexiconConfig,
+	AT_PROTO_LEXICONS,
+} from '@/core/storage/wrapper';
+import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
 import { createAtProtoClient, AtProtoClient } from './atcute-client';
-import {
-	ATPROTO_OAUTH_CONNECT_URL,
-} from './atproto-types';
+import { ATPROTO_OAUTH_CONNECT_URL } from './atproto-types';
+import { mapSongToRecord } from './field-mapping';
+
+const DEFAULT_LEXICONS: AtProtoLexiconConfig = {
+	teal: true,
+	rocksky: true,
+};
 
 export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	public isLocalOnly = false;
@@ -68,30 +78,24 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 			);
 		}
 
+		const enabledLexicons = await this.getEnabledLexicons();
+
 		const results: ServiceCallResult[] = [];
 		for (const song of songs) {
-			try {
-				const record = {
-					trackName: song.getTrack() ?? '',
-					artists: song.getArtist()
-						? [{ artistName: song.getArtist()! }]
-						: undefined,
-					releaseName: song.getAlbum() || undefined,
-					duration: song.getDuration() || undefined,
-					originUrl: song.getOriginUrl() || undefined,
-					playedTime: song.metadata.startTimestamp
-						? new Date(song.metadata.startTimestamp * 1000).toISOString()
-						: new Date().toISOString(),
-				};
-
-				await client.createRecord(
-					'fm.teal.alpha.feed.play',
-					record as Record<string, unknown>,
-				);
-				results.push(ServiceCallResult.RESULT_OK);
-			} catch {
-				results.push(ServiceCallResult.ERROR_OTHER);
+			let songOk = true;
+			for (const lexicon of LEXICONS) {
+				if (!(lexicon.id in enabledLexicons) || !enabledLexicons[lexicon.id]) continue;
+				try {
+					const record = mapSongToRecord(lexicon.id, song);
+					await client.createRecord(
+						lexicon.collection,
+						record as unknown as Record<string, unknown>,
+					);
+				} catch {
+					songOk = false;
+				}
 			}
+			results.push(songOk ? ServiceCallResult.RESULT_OK : ServiceCallResult.ERROR_OTHER);
 		}
 
 		return results;
@@ -130,10 +134,13 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		sessionName: string;
 		oauthSession: AtProtoOAuthSession;
 	}): Promise<void> {
+		const data = await this.storage.get();
+		const lexicons = (data && 'lexicons' in data && data.lexicons) || DEFAULT_LEXICONS;
 		await this.storage.set({
 			sessionID: session.sessionID,
 			sessionName: session.sessionName,
 			oauthSession: session.oauthSession,
+			lexicons,
 		});
 	}
 
@@ -151,5 +158,26 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 			return null;
 		}
 		return createAtProtoClient(session);
+	}
+
+	public async getEnabledLexicons(): Promise<AtProtoLexiconConfig> {
+		const data = await this.storage.get();
+		if (!data || !('lexicons' in data) || !data.lexicons) {
+			return { ...DEFAULT_LEXICONS };
+		}
+		return { ...DEFAULT_LEXICONS, ...data.lexicons };
+	}
+
+	public async setLexiconEnabled(
+		id: string,
+		enabled: boolean,
+	): Promise<void> {
+		const lexicons = await this.getEnabledLexicons();
+		(lexicons as Record<string, boolean>)[id] = enabled;
+		const data = await this.storage.get();
+		await this.storage.set({
+			...(data || {}),
+			lexicons,
+		});
 	}
 }
