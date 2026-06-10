@@ -8,6 +8,7 @@ import { sendContentMessage } from '@/util/communication';
 import savedEdits from '../storage/saved-edits';
 import regexEdits from '../storage/regex-edits';
 import { webhookListenForApproval } from './webhook';
+import { atprotoOAuthListen } from './atproto-oauth';
 
 main();
 async function main() {
@@ -17,6 +18,12 @@ async function main() {
 			window.location.href.startsWith('https://webscrobbler.com/webhook')
 		) {
 			webhookListenForApproval();
+			return;
+		}
+		if (
+			window.location.href.startsWith('https://rektide.github.io/oauth/')
+		) {
+			atprotoOAuthListen();
 			return;
 		}
 		await fetchConnector();

@@ -47,6 +47,7 @@ import {
 	toggleLove,
 } from './scrobble';
 import scrobbleService from '../object/scrobble-service';
+import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
 import { fetchListenBrainzProfile } from '@/util/util';
 
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
@@ -528,6 +529,34 @@ setupBackgroundListeners(
 			}
 
 			return (await browser.tabs.get(tabId)).audible ?? true;
+		},
+	}),
+
+	backgroundListener({
+		type: 'atprotoOAuthSession',
+		fn: async (payload, sender) => {
+			if (
+				!sender.url?.startsWith('https://rektide.github.io/oauth/')
+			) {
+				console.warn(
+					'atprotoOAuthSession: rejected from unexpected sender',
+					sender.url,
+				);
+				return;
+			}
+
+			const scrobbler = scrobbleService.getScrobblerByLabel(
+				'AtProto',
+			) as AtProtoScrobbler | null;
+			if (!scrobbler) {
+				console.error('atprotoOAuthSession: AtProto scrobbler not found');
+				return;
+			}
+
+			await scrobbler.storeOAuthSession(payload.session);
+			console.log(
+				`atprotoOAuthSession: stored session for ${payload.session.sessionName}`,
+			);
 		},
 	}),
 );
