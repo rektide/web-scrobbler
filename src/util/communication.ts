@@ -122,6 +122,16 @@ interface ContentCommunications {
 		payload: undefined;
 		response: boolean;
 	};
+	atprotoOAuthSession: {
+		payload: {
+			session: {
+				sessionID: string;
+				sessionName: string;
+				oauthSession: unknown;
+			};
+		};
+		response: void;
+	};
 }
 
 interface BackgroundCommunications {
