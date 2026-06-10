@@ -504,28 +504,64 @@ Rocksky defines additional record types beyond scrobbles. Teal.fm does not have 
   and write it when connectivity returns. The upstream extension already has a scrobble cache we
   can leverage.
 
-## project structure (planned additions)
+## production URL migration
+
+When switching from `rektide.github.io` (dev) to `webscrobbler.com` (production), update these files:
+
+### Extension (`web-scrobbler-teal`)
+
+| file | what changes |
+|------|-------------|
+| `src/core/scrobbler/atproto/atproto-types.ts` | `ATPROTO_OAUTH_ORIGIN`, `ATPROTO_OAUTH_CONNECT_URL` |
+| `src/core/content/atproto-oauth.ts` | origin validation in `event.origin` check |
+| `src/core/content/main.ts` | URL prefix in content script interceptor |
+| `src/core/background/main.ts` | `sender.url` validation in background listener |
+
+### Hosted site (`web-scrobbler-github`)
+
+| file | what changes |
+|------|-------------|
+| `public/oauth-client-metadata.json` | `client_id`, `client_uri`, `redirect_uris` |
+| `src/routes/oauth/connect.tsx` | `configureOAuth` metadata fields |
+| `src/routes/oauth/callback.tsx` | `configureOAuth` metadata fields |
+
+### Process
+
+1. Deploy updated client metadata + OAuth routes to `webscrobbler.com`
+2. Update all URL constants in the extension
+3. Build and publish new extension version
+4. Users with existing sessions stored under the old origin continue working until tokens expire
+5. Old `rektide.github.io` routes can remain as a fallback
+
+## project structure (implemented)
 
 ```
-manifest.config.ts             # Add Teal OAuth host match and optional externally_connectable
-vite.configs.ts                # Add any extra extension UI entry only if needed
-src/core/content/main.ts       # Special-case the OAuth callback URL before connector loading
-src/core/background/main.ts    # Receive and store the OAuth session
-src/core/storage/browser-storage.ts
-src/core/storage/wrapper.ts    # Add TealFm storage namespace and model
-src/core/scrobbler/teal/
-  teal-scrobbler.ts          # BaseScrobbler implementation
-  teal-types.ts              # play record type definitions
-  atcute-client.ts           # atcute OAuth + Client setup
-  field-mapping.ts           # BaseSong -> play record mapping
-src/ui/options/components/accounts.tsx
-                           # Add a TealFm row to the existing accounts UI
+src/core/scrobbler/atproto/
+  atproto-scrobbler.ts    # BaseScrobbler<'AtProto'> implementation
+  atproto-types.ts        # constants (OAuth URLs) + play record type
+  atcute-client.ts        # AtProtoClient wrapping OAuthUserAgent + createRecord
+src/core/content/
+  atproto-oauth.ts        # postMessage listener for OAuth callback relay
+  main.ts                 # special-case interceptor for rektide.github.io/oauth/*
+src/core/background/main.ts # atprotoOAuthSession background listener
+src/core/storage/
+  browser-storage.ts      # AtProto: LOCAL
+  wrapper.ts              # AtProtoModel, AtProtoOAuthSession types
+src/core/object/scrobble-service.ts # AtProtoScrobbler registered
+src/util/communication.ts  # atprotoOAuthSession message type
+src/ui/options/components/accounts.tsx # AtProto scrobbler display row
 
-~/src/web-scrobbler-github/public/oauth-client-metadata.json
-~/src/web-scrobbler-github/src/routes/oauth/connect.tsx
-~/src/web-scrobbler-github/src/routes/oauth/callback.tsx
-                           # Hosted OAuth entry point and callback
+~/src/web-scrobbler-github/
+  public/oauth-client-metadata.json
+  src/routes/oauth/connect.tsx   # handle input → atcute createAuthorizationUrl
+  src/routes/oauth/callback.tsx  # finalizeAuthorization → postMessage + handle resolve
 ```
+
+## bundle impact
+
+atcute adds approximately **16.4 KB minified / 5.4 KB gzip** to the background script bundle.
+This includes DPoP proof signing, session management, and nonce tracking. The `@atcute/client`
+XRPC layer is not included (requests go through `OAuthUserAgent.handle()` directly).
 
 ## references
 
