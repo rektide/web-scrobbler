@@ -69,9 +69,7 @@ export type ArrayProperty = {
 
 export type ArrayProperties = ArrayProperty[];
 
-import type { Session } from '@atcute/oauth-browser-client';
-
-export type AtProtoOAuthSession = Session;
+import type { Session as AtProtoSession } from '@atcute/oauth-browser-client';
 
 export interface AtProtoAuthStarted {
 	isAuthStarted?: boolean;
@@ -93,7 +91,7 @@ export type AtProtoLexiconConfig = Record<AtProtoLexiconId, boolean>;
 export interface AtProtoAuthFinished {
 	sessionID?: string;
 	sessionName?: string;
-	oauthSession?: AtProtoOAuthSession;
+	oauthSession?: AtProtoSession;
 	lexicons?: AtProtoLexiconConfig;
 }
 
