@@ -71,24 +71,24 @@ export type ArrayProperties = ArrayProperty[];
 
 export interface AtProtoOAuthSession {
 	dpopKey: {
-		alg: 'ES256';
-		kty: 'EC';
-		crv: 'P-256';
+		alg: string;
+		kty: string;
+		crv: string;
 		x: string;
 		y: string;
 		d: string;
-	};
+	} & Record<string, unknown>;
 	info: {
 		sub: string;
 		aud: string;
 		server: Record<string, unknown>;
-	};
+	} & Record<string, unknown>;
 	token: {
 		access: string;
-		refresh: string;
-		type: 'Bearer';
-		expires_at: number;
-	};
+		refresh?: string;
+		type: string;
+		expires_at?: number;
+	} & Record<string, unknown>;
 }
 
 export interface AtProtoAuthStarted {

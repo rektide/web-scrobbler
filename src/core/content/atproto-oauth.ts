@@ -13,13 +13,12 @@ export function atprotoOAuthListen(): void {
 			return;
 		}
 
-		const { session } = event.data;
+		const { session, handle } = event.data;
 		if (!session?.info?.sub || !session?.info?.aud) {
 			return;
 		}
 
 		const sessionID = session.info.sub as string;
-		const handle = (session.info as Record<string, unknown>).handle as string | undefined;
 
 		sendContentMessage({
 			type: 'atprotoOAuthSession',
