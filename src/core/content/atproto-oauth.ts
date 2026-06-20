@@ -1,11 +1,11 @@
 import { sendContentMessage } from '@/util/communication';
+import { oauthMessageOrigin } from '@/core/scrobbler/atproto/oauth-config';
 
-const ATPROTO_OAUTH_ORIGIN = 'https://rektide.github.io';
 const OAUTH_MESSAGE_TYPE = 'web-scrobbler-teal/oauth-session';
 
 export function atprotoOAuthListen(): void {
 	window.addEventListener('message', (event) => {
-		if (event.origin !== ATPROTO_OAUTH_ORIGIN) {
+		if (event.origin !== oauthMessageOrigin) {
 			return;
 		}
 

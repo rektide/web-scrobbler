@@ -49,6 +49,7 @@ import {
 import scrobbleService from '../object/scrobble-service';
 import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
 import { initAtcute } from '@/core/scrobbler/atproto/atcute-client';
+import { oauthPathPrefix } from '@/core/scrobbler/atproto/oauth-config';
 import { fetchListenBrainzProfile } from '@/util/util';
 
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
@@ -537,7 +538,7 @@ setupBackgroundListeners(
 		type: 'atprotoOAuthSession',
 		fn: async (payload, sender) => {
 			if (
-				!sender.url?.startsWith('https://rektide.github.io/oauth/')
+				!sender.url?.startsWith(oauthPathPrefix)
 			) {
 				console.warn(
 					'atprotoOAuthSession: rejected from unexpected sender',

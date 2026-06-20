@@ -11,6 +11,7 @@ import {
 	XrpcHandleResolver,
 } from '@atcute/identity-resolver';
 import { initLocalStorageShim } from './localstorage-shim';
+import { oauthClientId, oauthRedirectUri } from './oauth-config';
 
 let configured = false;
 
@@ -22,8 +23,8 @@ export async function initAtcute(): Promise<void> {
 
 	configureOAuth({
 		metadata: {
-			client_id: 'https://rektide.github.io/oauth-client-metadata.json',
-			redirect_uri: 'https://rektide.github.io/oauth/callback',
+			client_id: oauthClientId,
+			redirect_uri: oauthRedirectUri,
 		},
 		identityResolver: new LocalActorResolver({
 			handleResolver: new XrpcHandleResolver({

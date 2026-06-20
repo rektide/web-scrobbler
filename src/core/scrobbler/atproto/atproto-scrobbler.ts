@@ -10,8 +10,7 @@ import type { Session } from '@atcute/oauth-browser-client';
 import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
 import { createAtProtoClient, AtProtoClient, initAtcute } from './atcute-client';
 import { mapSongToRecord } from './field-mapping';
-
-const ATPROTO_OAUTH_CONNECT_URL = 'https://rektide.github.io/oauth/connect';
+import { oauthConnectUrl } from './oauth-config';
 
 const DEFAULT_LEXICONS: AtProtoLexiconConfig = {
 	teal: true,
@@ -23,7 +22,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 
 	public async getAuthUrl(): Promise<string> {
 		await this.storage.set({ isAuthStarted: true });
-		return ATPROTO_OAUTH_CONNECT_URL;
+		return oauthConnectUrl;
 	}
 
 	public async getSession(): Promise<SessionData> {
