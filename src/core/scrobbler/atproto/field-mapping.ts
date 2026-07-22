@@ -26,6 +26,7 @@ export interface RockskyScrobbleRecord {
 	duration?: number;
 	mbid?: string;
 	isrc?: string;
+	tags?: string[];
 	createdAt?: string;
 }
 
@@ -33,12 +34,22 @@ export type AtProtoRecord = TealPlayRecord | RockskyScrobbleRecord;
 
 function getMusicServiceDomain(song: BaseSong): string | undefined {
 	const url = song.getOriginUrl();
-	if (!url) return undefined;
-	try {
-		return new URL(url).hostname;
-	} catch {
-		return undefined;
+	if (url) {
+		try {
+			return new URL(url).hostname;
+		} catch {
+			// not a valid URL, fall through
+		}
 	}
+
+	for (const pattern of song.connector.matches) {
+		const match = pattern.match(/^\*:\/\/(?:\*\.)?([^/*]+)/);
+		if (match) {
+			return match[1];
+		}
+	}
+
+	return undefined;
 }
 
 function getPlayedTime(song: BaseSong): string {
@@ -109,6 +120,11 @@ export function mapToRocksky(song: BaseSong): RockskyScrobbleRecord {
 	const duration = song.getDuration();
 	if (duration) {
 		record.duration = duration * 1000;
+	}
+
+	const domain = getMusicServiceDomain(song);
+	if (domain) {
+		record.tags = [domain];
 	}
 
 	return record;
