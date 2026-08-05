@@ -95,32 +95,20 @@ export function mapToTeal(song: BaseSong): TealPlayRecord {
 }
 
 export function mapToRocksky(song: BaseSong): RockskyScrobbleRecord {
+	const artist = song.getArtist() ?? 'Unknown';
+	const album = song.getAlbum() ?? 'Unknown';
+	const albumArtist = song.getAlbumArtist() ?? artist;
+
 	const record: RockskyScrobbleRecord = {
 		$type: 'app.rocksky.scrobble',
-		title: song.getTrack() ?? '',
+		title: song.getTrack() ?? 'Unknown',
+		artist,
+		artists: [{ name: artist }],
+		album,
+		albumArtist,
+		duration: (song.getDuration() ?? 0) * 1000,
 		createdAt: getPlayedTime(song),
 	};
-
-	const artist = song.getArtist();
-	if (artist) {
-		record.artist = artist;
-		record.artists = [{ name: artist }];
-	}
-
-	const album = song.getAlbum();
-	if (album) {
-		record.album = album;
-	}
-
-	const albumArtist = song.getAlbumArtist();
-	if (albumArtist) {
-		record.albumArtist = albumArtist;
-	}
-
-	const duration = song.getDuration();
-	if (duration) {
-		record.duration = duration * 1000;
-	}
 
 	const domain = getMusicServiceDomain(song);
 	if (domain) {

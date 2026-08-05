@@ -107,6 +107,7 @@ test('scrobble writes app.rocksky.scrobble record to PDS', async ({ page }) => {
 	expect(rockskyCall).toBeDefined();
 	expect(rockskyCall!.record.title).toBe('Rocksky Track');
 	expect(rockskyCall!.record.artist).toBe('Rocksky Artist');
+	expect(rockskyCall!.record.albumArtist).toBe('Rocksky Artist');
 	expect(rockskyCall!.record.duration).toBe(200000);
 	expect(rockskyCall!.record.tags).toEqual(['kexp.org']);
 });
