@@ -2,14 +2,24 @@ export {};
 
 interface Station {
 	label: string;
+	name: string;
 	callSign?: string;
+	slug: string;
+	tagline?: string;
+	frequencyHz?: number;
+	band?: string;
 	originUrl: string;
 }
 
 const stations: Record<string, Station> = {
 	'mountain-chill': {
-		label: 'Mountain Chill',
+		label: '95.5 Mountain Chill',
+		name: 'Mountain Chill',
 		callSign: 'KRKQ',
+		slug: 'mountain-chill',
+		tagline: 'Ninety-five five Mountain Chill',
+		frequencyHz: 95_500_000,
+		band: 'FM',
 		originUrl: 'https://indieradioaccess.org/player/krkq.html',
 	},
 };
@@ -40,9 +50,7 @@ Connector.getChannelLabel = () => {
 	if (!station) {
 		return stationId;
 	}
-	return station.callSign
-		? `${station.label} (${station.callSign})`
-		: station.label;
+	return station.label;
 };
 
 Connector.getOriginUrl = () => {
