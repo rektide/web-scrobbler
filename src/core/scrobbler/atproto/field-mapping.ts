@@ -12,6 +12,7 @@ export interface TealPlayRecord {
 	isrc?: string;
 	originUrl?: string;
 	musicServiceBaseDomain?: string;
+	musicServiceUri?: string;
 	submissionClientAgent?: string;
 	playedTime?: string;
 }
@@ -52,6 +53,20 @@ function getMusicServiceDomain(song: BaseSong): string | undefined {
 	return undefined;
 }
 
+function getMusicServiceUri(song: BaseSong): string | undefined {
+	const originUrl = song.getOriginUrl();
+	if (!originUrl) {
+		return undefined;
+	}
+
+	try {
+		const { origin } = new URL(originUrl);
+		return origin === 'null' ? undefined : `${origin}/`;
+	} catch {
+		return undefined;
+	}
+}
+
 function getPlayedTime(song: BaseSong): string {
 	if (song.metadata.startTimestamp) {
 		return new Date(song.metadata.startTimestamp * 1000).toISOString();
@@ -89,6 +104,11 @@ export function mapToTeal(song: BaseSong): TealPlayRecord {
 	const domain = getMusicServiceDomain(song);
 	if (domain) {
 		record.musicServiceBaseDomain = domain;
+	}
+
+	const musicServiceUri = getMusicServiceUri(song);
+	if (musicServiceUri) {
+		record.musicServiceUri = musicServiceUri;
 	}
 
 	return record;
