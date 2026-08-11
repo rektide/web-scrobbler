@@ -15,8 +15,8 @@ test('maps the music service to hostname and URI projections', () => {
 	} as unknown as BaseSong;
 
 	expect(mapToTeal(song)).toMatchObject({
-		originUrl: 'https://indieradioaccess.org/player/krkq.html',
-		musicServiceBaseDomain: 'indieradioaccess.org',
+		$type: 'fm.teal.feed.play',
+		originUri: 'https://indieradioaccess.org/player/krkq.html',
 		musicServiceUri: 'https://indieradioaccess.org/',
 	});
 });

@@ -82,7 +82,7 @@ export const AT_PROTO_LEXICONS: {
 	label: string;
 	collection: string;
 }[] = [
-	{ id: 'teal', label: 'teal.fm', collection: 'fm.teal.alpha.feed.play' },
+	{ id: 'teal', label: 'teal.fm', collection: 'fm.teal.feed.play' },
 	{ id: 'rocksky', label: 'Rocksky', collection: 'app.rocksky.scrobble' },
 ];
 

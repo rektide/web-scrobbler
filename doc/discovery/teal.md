@@ -2,19 +2,19 @@
 
 A fork of [web-scrobbler](https://github.com/web-scrobbler/web-scrobbler) that scrobbles to
 [teal.fm](https://teal.fm) and other AT Protocol music services. Instead of writing plays to
-Last.fm or ListenBrainz, this extension writes `fm.teal.alpha.feed.play` records directly to the
+Last.fm or ListenBrainz, this extension writes `fm.teal.feed.play` records directly to the
 user's Bluesky PDS via AT Protocol OAuth.
 
 ## what this extension does
 
 1. Detects music playback on ~100 supported streaming sites (inherited from upstream web-scrobbler)
 2. Authenticates the user via AT Protocol OAuth (Bluesky login)
-3. Writes play records to the user's PDS using the `fm.teal.alpha.feed.play` lexicon
+3. Writes play records to the user's PDS using the `fm.teal.feed.play` lexicon
 4. Optionally writes to Rocksky too, if it uses a different lexicon (TBD)
 
 ## the teal.fm play record
 
-The core lexicon is [`fm.teal.alpha.feed.play`](https://github.com/teal-fm/teal/blob/main/lexicons/fm.teal.alpha/feed/play.json). A play record has:
+The core lexicon is [`fm.teal.feed.play`](https://github.com/teal-fm/teal/blob/main/lexicons/fm.teal/feed/play.json). A play record has:
 
 | field | required | description |
 |-------|----------|-------------|
@@ -25,8 +25,8 @@ The core lexicon is [`fm.teal.alpha.feed.play`](https://github.com/teal-fm/teal/
 | `releaseName` | no | album/release title |
 | `releaseMbId` | no | MusicBrainz release ID |
 | `isrc` | no | ISRC code |
-| `originUrl` | no | URL of the track on the music service |
-| `musicServiceBaseDomain` | no | e.g. `spotify.com`, `music.apple.com` |
+| `originUri` | no | exact URI where the listening event originated |
+| `musicServiceUri` | no | canonical URI identifying the music service |
 | `submissionClientAgent` | no | user-agent style string identifying the client |
 | `playedTime` | no | ISO datetime of when the track was played |
 | `trackDiscriminant` | no | distinguishes variants (e.g. "Acoustic Version") |
@@ -288,7 +288,7 @@ Use the `rektide.github.io` fork first:
 6. Add a minimal `TealFm` account row that opens `https://rektide.github.io/oauth/connect` and shows
    the stored DID/handle after the callback succeeds.
 7. After the handoff works, implement the `TealScrobbler` write path with one record write to
-   `fm.teal.alpha.feed.play` from a test song.
+   `fm.teal.feed.play` from a test song.
 
 This flow should use `postMessage` first. Add `externally_connectable` only after the hosted flow
 works and the production extension ID is known.
@@ -389,7 +389,7 @@ getLabel()            -> display name
 We implement a `TealScrobbler` extending `BaseScrobbler<'TealFm'>` that:
 
 - Uses atcute OAuth for `getAuthUrl()` / `getSession()`
-- Maps `BaseSong` fields to `fm.teal.alpha.feed.play` record fields
+- Maps `BaseSong` fields to `fm.teal.feed.play` record fields
 - Writes records via `com.atproto.repo.createRecord` in `scrobble()`
 - Treats `sendNowPlaying()`, `sendPaused()`, and `sendResumedPlaying()` as no-ops unless teal.fm
   gains a separate now-playing record type
@@ -403,8 +403,8 @@ We implement a `TealScrobbler` extending `BaseScrobbler<'TealFm'>` that:
 | `artist` | `artists[0].artistName` |
 | `album` | `releaseName` |
 | `duration` | `duration` (already seconds in `BaseSong.getDuration()`) |
-| `originUrl` | `originUrl` |
-| `connector.label` / `originUrl` | derive `musicServiceBaseDomain` |
+| `originUrl` | `originUri` |
+| `originUrl` | derive `musicServiceUri` origin |
 | `metadata.startTimestamp` | `playedTime` |
 
 ### storage
@@ -427,10 +427,10 @@ Source: [LEXICONS.md](https://github.com/tsirysndr/rocksky/blob/main/LEXICONS.md
 
 ### scrobble/play record fields
 
-Teal.fm record type: `fm.teal.alpha.feed.play`
+Teal.fm record type: `fm.teal.feed.play`
 Rocksky record type: `app.rocksky.scrobble`
 
-| teal.fm (`fm.teal.alpha.feed.play`) | rocksky (`app.rocksky.scrobble`) | notes |
+| teal.fm (`fm.teal.feed.play`) | rocksky (`app.rocksky.scrobble`) | notes |
 |---|---|---|
 | `trackName: string` | `title: string` | different field names, same data |
 | `recordingMbId: string` | | teal uses `mbid:<uuid>` format |
@@ -443,8 +443,8 @@ Rocksky record type: `app.rocksky.scrobble`
 | `releaseName: string` | `album: string` | different field names, same data |
 | `releaseMbId: string` | | teal-only, MusicBrainz release ID |
 | `isrc: string` | `isrc: string` | same |
-| `originUrl: string` | | teal-only, URL of the track on the music service |
-| `musicServiceBaseDomain: string` | | teal-only, e.g. `spotify.com` |
+| `originUri: string` | | teal-only, exact URI where playback originated |
+| `musicServiceUri: string` | | teal-only, canonical music-service URI |
 | `submissionClientAgent: string` | | teal-only, user-agent style client identifier |
 | `playedTime: datetime` | `createdAt: datetime` | similar purpose, different names |
 | `trackDiscriminant: string` | | teal-only, e.g. "Acoustic Version" |
@@ -566,7 +566,7 @@ XRPC layer is not included (requests go through `OAuthUserAgent.handle()` direct
 ## references
 
 - [teal.fm](https://teal.fm) -- AT Protocol music scrobbler
-- [teal-fm/teal lexicons](https://github.com/teal-fm/teal/tree/main/lexicons/fm.teal.alpha) -- play record schema
+- [teal-fm/teal lexicons](https://github.com/teal-fm/teal/tree/main/lexicons/fm.teal) -- play record schema
 - [atcute](https://github.com/mary-ext/atcute) -- lightweight AT Protocol TypeScript libraries
 - [AT Protocol OAuth spec](https://atproto.com/specs/oauth)
 - [web-scrobbler](https://github.com/web-scrobbler/web-scrobbler) -- upstream extension

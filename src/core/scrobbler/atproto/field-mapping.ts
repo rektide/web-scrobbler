@@ -2,7 +2,7 @@ import type { BaseSong } from '@/core/object/song';
 import type { AtProtoLexiconId } from '@/core/storage/wrapper';
 
 export interface TealPlayRecord {
-	$type: 'fm.teal.alpha.feed.play';
+	$type: 'fm.teal.feed.play';
 	trackName: string;
 	recordingMbId?: string;
 	duration?: number;
@@ -10,8 +10,7 @@ export interface TealPlayRecord {
 	releaseName?: string;
 	releaseMbId?: string;
 	isrc?: string;
-	originUrl?: string;
-	musicServiceBaseDomain?: string;
+	originUri?: string;
 	musicServiceUri?: string;
 	submissionClientAgent?: string;
 	playedTime?: string;
@@ -76,7 +75,7 @@ function getPlayedTime(song: BaseSong): string {
 
 export function mapToTeal(song: BaseSong): TealPlayRecord {
 	const record: TealPlayRecord = {
-		$type: 'fm.teal.alpha.feed.play',
+		$type: 'fm.teal.feed.play',
 		trackName: song.getTrack() ?? '',
 		playedTime: getPlayedTime(song),
 	};
@@ -98,12 +97,7 @@ export function mapToTeal(song: BaseSong): TealPlayRecord {
 
 	const originUrl = song.getOriginUrl();
 	if (originUrl) {
-		record.originUrl = originUrl;
-	}
-
-	const domain = getMusicServiceDomain(song);
-	if (domain) {
-		record.musicServiceBaseDomain = domain;
+		record.originUri = originUrl;
 	}
 
 	const musicServiceUri = getMusicServiceUri(song);

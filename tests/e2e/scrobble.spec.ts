@@ -14,7 +14,7 @@ const mockConnector = {
 	id: 'kexp',
 };
 
-test('scrobble writes fm.teal.alpha.feed.play record to PDS', async ({ page }) => {
+test('scrobble writes fm.teal.feed.play record to PDS', async ({ page }) => {
 	await page.goto(HARNESS_URL);
 
 	await page.waitForFunction(() => window.ready === true);
@@ -60,13 +60,14 @@ test('scrobble writes fm.teal.alpha.feed.play record to PDS', async ({ page }) =
 
 	expect(createRecordCalls.length).toBeGreaterThanOrEqual(1);
 
-	const tealCall = createRecordCalls.find((c) => c.collection === 'fm.teal.alpha.feed.play');
+	const tealCall = createRecordCalls.find((c) => c.collection === 'fm.teal.feed.play');
 	expect(tealCall).toBeDefined();
 	expect(tealCall!.record.trackName).toBe('Test Track');
 	expect(tealCall!.record.artists).toEqual([{ artistName: 'Test Artist' }]);
 	expect(tealCall!.record.releaseName).toBe('Test Album');
 	expect(tealCall!.record.duration).toBe(180);
-	expect(tealCall!.record.musicServiceBaseDomain).toBe('open.spotify.com');
+	expect(tealCall!.record.originUri).toBe('https://open.spotify.com/track/123');
+	expect(tealCall!.record.musicServiceUri).toBe('https://open.spotify.com/');
 });
 
 test('scrobble writes app.rocksky.scrobble record to PDS', async ({ page }) => {
