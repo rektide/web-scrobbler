@@ -31,6 +31,24 @@ export interface TrackInfoWithAlbum extends ArtistTrackInfo {
 	album?: string | null;
 }
 
+export interface ExternalIdentifier {
+	authorityUri: string;
+	value: string;
+	kind?: string;
+	uri?: string;
+}
+
+export interface Station {
+	uri: string;
+	label?: string;
+	name?: string;
+	callSign?: string;
+	tagline?: string;
+	frequencyHz?: number;
+	band?: string;
+	identifiers?: ExternalIdentifier[];
+}
+
 export interface BaseState extends TrackInfoWithAlbum {
 	/**
 	 * URL to track art image.
@@ -39,6 +57,11 @@ export interface BaseState extends TrackInfoWithAlbum {
 }
 
 export interface State extends BaseState {
+	/**
+	 * Broadcast station that selected the track.
+	 */
+	station?: Station | null;
+
 	/**
 	 * Album artist.
 	 */

@@ -1,5 +1,6 @@
 import type { BaseSong } from '@/core/object/song';
 import type { AtProtoLexiconId } from '@/core/storage/wrapper';
+import type { Station } from '@/core/types';
 
 export interface TealPlayRecord {
 	$type: 'fm.teal.feed.play';
@@ -12,6 +13,7 @@ export interface TealPlayRecord {
 	isrc?: string;
 	originUri?: string;
 	musicServiceUri?: string;
+	station?: Station;
 	submissionClientAgent?: string;
 	playedTime?: string;
 }
@@ -103,6 +105,11 @@ export function mapToTeal(song: BaseSong): TealPlayRecord {
 	const musicServiceUri = getMusicServiceUri(song);
 	if (musicServiceUri) {
 		record.musicServiceUri = musicServiceUri;
+	}
+
+	const station = song.getStation();
+	if (station) {
+		record.station = station;
 	}
 
 	return record;

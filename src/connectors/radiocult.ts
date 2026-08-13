@@ -1,6 +1,7 @@
 export {};
 
 interface Station {
+	uri: string;
 	label: string;
 	name: string;
 	callSign?: string;
@@ -8,11 +9,18 @@ interface Station {
 	tagline?: string;
 	frequencyHz?: number;
 	band?: string;
+	identifiers?: {
+		authorityUri: string;
+		value: string;
+		kind?: string;
+		uri?: string;
+	}[];
 	originUrl: string;
 }
 
 const stations: Record<string, Station> = {
 	'mountain-chill': {
+		uri: 'https://mountainchill.com/',
 		label: '95.5 Mountain Chill',
 		name: 'Mountain Chill',
 		callSign: 'KRKQ',
@@ -20,6 +28,14 @@ const stations: Record<string, Station> = {
 		tagline: 'Ninety-five five Mountain Chill',
 		frequencyHz: 95_500_000,
 		band: 'FM',
+		identifiers: [
+			{
+				authorityUri: 'https://radiocult.fm/',
+				value: 'mountain-chill',
+				kind: 'slug',
+				uri: 'https://app.radiocult.fm/embed/square-player/mountain-chill',
+			},
+		],
 		originUrl: 'https://indieradioaccess.org/player/krkq.html',
 	},
 };
@@ -43,6 +59,11 @@ Connector.isPlaying = () => {
 };
 
 Connector.getChannelId = getStationId;
+
+Connector.getStation = () => {
+	const stationId = getStationId();
+	return (stationId && stations[stationId]) || null;
+};
 
 Connector.getChannelLabel = () => {
 	const stationId = getStationId();
