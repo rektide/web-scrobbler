@@ -133,6 +133,9 @@ const OVERRIDE_CONTENT = {
 };
 
 export interface ConnectorOptions {
+	RadioCult: {
+		stripTrademarkSymbols: boolean;
+	};
 	YouTube: {
 		scrobbleMusicRecognisedOnly: boolean;
 		enableGetTrackInfoFromYtMusic: boolean;
@@ -145,6 +148,9 @@ export interface ConnectorOptions {
  * Object that stores default option values for specific connectors.
  */
 const DEFAULT_CONNECTOR_OPTIONS: ConnectorOptions = {
+	RadioCult: {
+		stripTrademarkSymbols: true,
+	},
 	YouTube: {
 		scrobbleMusicRecognisedOnly: true,
 		enableGetTrackInfoFromYtMusic: true,
@@ -189,11 +195,16 @@ async function setupDefaultConfigValues() {
 		...DEFAULT_CONNECTOR_OPTIONS,
 		...(await connectorsOptions.get()),
 	};
-	for (const connectorKey in DEFAULT_CONNECTOR_OPTIONS) {
-		const typedKey = connectorKey as keyof ConnectorOptions;
-		connectorData[typedKey] = {
-			...DEFAULT_CONNECTOR_OPTIONS[typedKey],
-			...connectorData[typedKey],
+	const connectorDataByName = connectorData as Record<
+		string,
+		Record<string, boolean>
+	>;
+	for (const connectorKey of Object.keys(DEFAULT_CONNECTOR_OPTIONS)) {
+		connectorDataByName[connectorKey] = {
+			...(DEFAULT_CONNECTOR_OPTIONS[
+				connectorKey as keyof ConnectorOptions
+			] as Record<string, boolean>),
+			...connectorDataByName[connectorKey],
 		};
 	}
 	await connectorsOptions.set(connectorData);
@@ -267,7 +278,9 @@ export async function getConnectorOption(
 	}
 
 	const data = await connectorsOptions.get();
-	return data?.[connector][key];
+	return (data as Record<string, Record<string, boolean>> | null)?.[
+		connector
+	]?.[key];
 }
 
 export async function setConnectorOption(
@@ -286,7 +299,9 @@ export async function setConnectorOption(
 	if (!data?.[connector]) {
 		throw new Error(`Connector ${connector} not found in storage`);
 	}
-	data[connector][key] = value;
+	(data as unknown as Record<string, Record<string, boolean>>)[connector][
+		key
+	] = value;
 
 	await connectorsOptions.set(data);
 }
@@ -347,7 +362,7 @@ function assertValidConnector(
 function assertValidConnectorOptionKey(
 	connector: keyof ConnectorOptions,
 	key: string,
-): key is keyof ConnectorOptions[keyof ConnectorOptions] {
+): boolean {
 	if (!(key in DEFAULT_CONNECTOR_OPTIONS[connector])) {
 		throw new Error(`Unknown connector option key: ${key}`);
 	}

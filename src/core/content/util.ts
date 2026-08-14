@@ -718,7 +718,7 @@ export function queryElements<ElementT extends Element = HTMLElement>(
 export async function getOption(
 	connector: string,
 	key: string,
-): Promise<boolean> {
+): Promise<boolean | undefined> {
 	const data = await BrowserStorage.getStorage(
 		BrowserStorage.CONNECTORS_OPTIONS,
 	).get();
@@ -732,7 +732,7 @@ export async function getOption(
 		];
 	}
 	debugLog(`Option ${key} for connector ${connector} not found`, 'warn');
-	return false;
+	return undefined;
 }
 
 /**

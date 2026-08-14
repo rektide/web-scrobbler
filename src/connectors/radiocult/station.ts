@@ -24,6 +24,28 @@ interface RadioCultResponse {
 
 const RADIOCULT_URI = 'https://radiocult.fm/';
 
+function stripTrademarkSymbols(value: string | undefined): string | undefined {
+	return value
+		?.replace(/[®™]/gu, '')
+		.replace(/\s*\((?:R|TM)\)/giu, '')
+		.replace(/\s{2,}/gu, ' ')
+		.trim();
+}
+
+export function filterStationNames(
+	station: Station,
+	shouldStripTrademarkSymbols: boolean,
+): Station {
+	if (!shouldStripTrademarkSymbols) {
+		return station;
+	}
+	return {
+		...station,
+		label: stripTrademarkSymbols(station.label),
+		name: stripTrademarkSymbols(station.name),
+	};
+}
+
 function normalizeUri(value: string | undefined): string | undefined {
 	if (!value) {
 		return;

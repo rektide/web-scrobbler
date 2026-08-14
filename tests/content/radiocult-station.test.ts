@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
 	createFallbackStation,
+	filterStationNames,
 	parseRadioCultStation,
 } from '@/connectors/radiocult/station.ts';
 
@@ -96,5 +97,20 @@ describe('RadioCult station metadata', () => {
 		expect(
 			createFallbackStation('the-drive', 'The Drive 94.7 FM'),
 		).not.toHaveProperty('callSign');
+	});
+
+	test('optionally strips trademark symbols from names', () => {
+		const station = {
+			uri: 'https://example.com/',
+			label: 'Example® (TM) Radio',
+			name: 'Example™ (R)',
+			description: 'Example® station description',
+		};
+		expect(filterStationNames(station, true)).toEqual({
+			...station,
+			label: 'Example Radio',
+			name: 'Example',
+		});
+		expect(filterStationNames(station, false)).toBe(station);
 	});
 });

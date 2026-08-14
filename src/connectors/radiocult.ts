@@ -1,6 +1,7 @@
 import type { Station } from '@/core/types';
 import {
 	createFallbackStation,
+	filterStationNames,
 	parseRadioCultStation,
 } from './radiocult/station.ts';
 
@@ -15,12 +16,28 @@ const getStationId = () =>
 	null;
 
 const stationId = getStationId();
-let station = stationId
+let rawStation = stationId
 	? createFallbackStation(
 			stationId,
 			document.title.replace(/ \| RadioCult$/, ''),
 		)
 	: null;
+let shouldStripTrademarkSymbols = true;
+let station = rawStation
+	? filterStationNames(rawStation, shouldStripTrademarkSymbols)
+	: null;
+
+function updateStation() {
+	station = rawStation
+		? filterStationNames(rawStation, shouldStripTrademarkSymbols)
+		: null;
+	Connector.onStateChanged();
+}
+
+void Util.getOption('RadioCult', 'stripTrademarkSymbols').then((value) => {
+	shouldStripTrademarkSymbols = value ?? true;
+	updateStation();
+});
 
 if (stationId) {
 	void fetch(
@@ -28,11 +45,11 @@ if (stationId) {
 	)
 		.then((response) => response.json())
 		.then((response: unknown) => {
-			station = {
+			rawStation = {
 				...parseRadioCultStation(stationId, response),
 				...stationOverrides[stationId],
 			};
-			Connector.onStateChanged();
+			updateStation();
 		})
 		.catch((error: unknown) => {
 			Util.debugLog(
