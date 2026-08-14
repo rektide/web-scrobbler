@@ -39,18 +39,21 @@ function normalizeUri(value: string | undefined): string | undefined {
 }
 
 function parseBroadcastIdentity(label: string) {
-	const match = label.match(
-		/\b([A-Z]{3,4})\s+(\d{2,3}(?:\.\d+)?)\s*(FM|AM)\b/,
-	);
-	if (!match) {
+	const frequencyMatch = label.match(/\b(\d{2,4}(?:\.\d+)?)\s*(FM|AM)\b/);
+	if (!frequencyMatch) {
 		return {};
 	}
+	const callSign =
+		label.match(
+			/\b([A-Z]{3,4})\s+(?=\d{2,4}(?:\.\d+)?\s*(?:FM|AM)\b)/,
+		)?.[1] ?? label.match(/\b(?:FM|AM)\s+([A-Z]{3,4})\b/)?.[1];
 	return {
-		callSign: match[1],
+		...(callSign ? { callSign } : {}),
 		frequencyHz: Math.round(
-			Number(match[2]) * (match[3] === 'AM' ? 1_000 : 1_000_000),
+			Number(frequencyMatch[1]) *
+				(frequencyMatch[2] === 'AM' ? 1_000 : 1_000_000),
 		),
-		band: match[3],
+		band: frequencyMatch[2],
 	};
 }
 

@@ -85,4 +85,16 @@ describe('RadioCult station metadata', () => {
 			band: 'AM',
 		});
 	});
+
+	test('parses branded frequencies without inventing a callsign', () => {
+		expect(
+			createFallbackStation('the-drive', 'The Drive 94.7 FM'),
+		).toMatchObject({
+			frequencyHz: 94_700_000,
+			band: 'FM',
+		});
+		expect(
+			createFallbackStation('the-drive', 'The Drive 94.7 FM'),
+		).not.toHaveProperty('callSign');
+	});
 });
