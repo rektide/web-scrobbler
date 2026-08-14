@@ -44,6 +44,10 @@ export interface Station {
 	name?: string;
 	callSign?: string;
 	tagline?: string;
+	description?: string;
+	artworkUri?: string;
+	streamUri?: string;
+	countries?: string[];
 	frequencyHz?: number;
 	band?: string;
 	identifiers?: ExternalIdentifier[];

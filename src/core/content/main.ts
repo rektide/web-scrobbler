@@ -53,6 +53,10 @@ async function fetchConnector(): Promise<void> {
 	}
 
 	window.Connector = new BaseConnector(connector);
+	window.Connector.topLevelUrl = await sendContentMessage({
+		type: 'getTabUrl',
+		payload: undefined,
+	});
 	window.Util = Util;
 	window.MetadataFilter = MetadataFilter;
 	window.webScrobblerScripts = {};

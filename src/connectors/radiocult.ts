@@ -1,48 +1,46 @@
-export {};
+import type { Station } from '@/core/types';
+import {
+	createFallbackStation,
+	parseRadioCultStation,
+} from './radiocult/station.ts';
 
-interface Station {
-	uri: string;
-	label: string;
-	name: string;
-	callSign?: string;
-	slug: string;
-	tagline?: string;
-	frequencyHz?: number;
-	band?: string;
-	identifiers?: {
-		authorityUri: string;
-		value: string;
-		kind?: string;
-		uri?: string;
-	}[];
-	originUrl: string;
-}
-
-const stations: Record<string, Station> = {
+const stationOverrides: Record<string, Partial<Station>> = {
 	'mountain-chill': {
-		uri: 'https://mountainchill.com/',
-		label: '95.5 Mountain Chill',
-		name: 'Mountain Chill',
-		callSign: 'KRKQ',
-		slug: 'mountain-chill',
 		tagline: 'Ninety-five five Mountain Chill',
-		frequencyHz: 95_500_000,
-		band: 'FM',
-		identifiers: [
-			{
-				authorityUri: 'https://radiocult.fm/',
-				value: 'mountain-chill',
-				kind: 'slug',
-				uri: 'https://app.radiocult.fm/embed/square-player/mountain-chill',
-			},
-		],
-		originUrl: 'https://indieradioaccess.org/player/krkq.html',
 	},
 };
 
 const getStationId = () =>
 	window.location.pathname.match(/^\/embed\/square-player\/([^/]+)/)?.[1] ??
 	null;
+
+const stationId = getStationId();
+let station = stationId
+	? createFallbackStation(
+			stationId,
+			document.title.replace(/ \| RadioCult$/, ''),
+		)
+	: null;
+
+if (stationId) {
+	void fetch(
+		`https://api.radiocult.fm/api/station/${encodeURIComponent(stationId)}`,
+	)
+		.then((response) => response.json())
+		.then((response: unknown) => {
+			station = {
+				...parseRadioCultStation(stationId, response),
+				...stationOverrides[stationId],
+			};
+			Connector.onStateChanged();
+		})
+		.catch((error: unknown) => {
+			Util.debugLog(
+				`Unable to load RadioCult station metadata: ${String(error)}`,
+				'warn',
+			);
+		});
+}
 
 Connector.playerSelector = '#__next';
 
@@ -61,13 +59,11 @@ Connector.isPlaying = () => {
 Connector.getChannelId = getStationId;
 
 Connector.getStation = () => {
-	const stationId = getStationId();
-	return (stationId && stations[stationId]) || null;
+	return station;
 };
 
 Connector.getChannelLabel = () => {
 	const stationId = getStationId();
-	const station = stationId ? stations[stationId] : null;
 	if (!station) {
 		return stationId;
 	}
@@ -75,8 +71,5 @@ Connector.getChannelLabel = () => {
 };
 
 Connector.getOriginUrl = () => {
-	const stationId = getStationId();
-	return (
-		(stationId && stations[stationId]?.originUrl) || window.location.href
-	);
+	return Connector.topLevelUrl || document.referrer || window.location.href;
 };

@@ -354,6 +354,11 @@ setupBackgroundListeners(
 		},
 	}),
 
+	backgroundListener({
+		type: 'getTabUrl',
+		fn: (_, sender) => sender.tab?.url ?? null,
+	}),
+
 	/**
 	 * Listener called by a controller to trigger a now playing notification.
 	 */

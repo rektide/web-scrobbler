@@ -8,6 +8,11 @@ import { sendContentMessage } from '@/util/communication';
 
 export default class BaseConnector {
 	/**
+	 * URL shown in the browser tab, including when this connector runs in a frame.
+	 */
+	public topLevelUrl: string | null = null;
+
+	/**
 	 * Meta of connector
 	 */
 	public meta: ConnectorMeta;
