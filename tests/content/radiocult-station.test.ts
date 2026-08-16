@@ -79,6 +79,20 @@ describe('RadioCult station metadata', () => {
 		});
 	});
 
+	test('encodes legacy station IDs in resource URIs', () => {
+		expect(createFallbackStation('20ft Radio', '20ft Radio')).toMatchObject(
+			{
+				uri: 'https://app.radiocult.fm/embed/square-player/20ft%20Radio',
+				identifiers: [
+					{
+						value: '20ft Radio',
+						uri: 'https://app.radiocult.fm/embed/square-player/20ft%20Radio',
+					},
+				],
+			},
+		);
+	});
+
 	test('interprets AM frequencies as kilohertz', () => {
 		expect(createFallbackStation('wabc', 'WABC 770 AM')).toMatchObject({
 			callSign: 'WABC',

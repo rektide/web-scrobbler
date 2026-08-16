@@ -106,7 +106,7 @@ export function createFallbackStation(
 	stationId: string,
 	label = stationId,
 ): Station {
-	const resourceUri = `https://app.radiocult.fm/embed/square-player/${stationId}`;
+	const resourceUri = `https://app.radiocult.fm/embed/square-player/${encodeURIComponent(stationId)}`;
 	return {
 		uri: resourceUri,
 		label,
@@ -136,7 +136,7 @@ export function parseRadioCultStation(
 
 	const channel = data.channels?.[0];
 	const label = data.name || channel?.name || stationId;
-	const resourceUri = `https://app.radiocult.fm/embed/square-player/${stationId}`;
+	const resourceUri = `https://app.radiocult.fm/embed/square-player/${encodeURIComponent(stationId)}`;
 	const homepageUri = normalizeUri(data.socials?.site);
 	const streamUri = normalizeUri(
 		channel?.streamingUrl || channel?.stream_url,

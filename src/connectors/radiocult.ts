@@ -11,9 +11,12 @@ const stationOverrides: Record<string, Partial<Station>> = {
 	},
 };
 
-const getStationId = () =>
-	window.location.pathname.match(/^\/embed\/square-player\/([^/]+)/)?.[1] ??
-	null;
+const getStationId = () => {
+	const stationId = window.location.pathname.match(
+		/^\/embed\/(?:dock|player|popout|square-player)\/([^/]+)/,
+	)?.[1];
+	return stationId ? decodeURIComponent(stationId) : null;
+};
 
 const stationId = getStationId();
 let rawStation = stationId
