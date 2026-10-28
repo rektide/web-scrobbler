@@ -18,6 +18,18 @@ const [options, setOptions] = createResource(
 export default function ConnectorOptionsList() {
 	return (
 		<>
+			<h2>RadioCult</h2>
+			<ul class={styles.optionList}>
+				<ConnectorOptionEntry
+					options={options}
+					setOptions={setOptions}
+					connectorOptions={connectorOptions}
+					i18ntitle="optionRadioCultStripTrademarkSymbolsTitle"
+					i18nlabel="optionRadioCultStripTrademarkSymbols"
+					connector="RadioCult"
+					key="stripTrademarkSymbols"
+				/>
+			</ul>
 			<h2>YouTube</h2>
 			<ul class={styles.optionList}>
 				<ConnectorOptionEntry

@@ -133,6 +133,9 @@ const OVERRIDE_CONTENT = {
 };
 
 export interface ConnectorOptions {
+	RadioCult: {
+		stripTrademarkSymbols: boolean;
+	};
 	YouTube: {
 		scrobbleMusicRecognisedOnly: boolean;
 		enableGetTrackInfoFromYtMusic: boolean;
@@ -145,6 +148,9 @@ export interface ConnectorOptions {
  * Object that stores default option values for specific connectors.
  */
 const DEFAULT_CONNECTOR_OPTIONS: ConnectorOptions = {
+	RadioCult: {
+		stripTrademarkSymbols: true,
+	},
 	YouTube: {
 		scrobbleMusicRecognisedOnly: true,
 		enableGetTrackInfoFromYtMusic: true,
@@ -185,21 +191,24 @@ async function setupDefaultConfigValues() {
 	await options.set(data);
 	void options.debugLog([DISABLED_CONNECTORS]);
 
-	const connectorData = {
+	const connectorData: ConnectorOptions = {
 		...DEFAULT_CONNECTOR_OPTIONS,
 		...(await connectorsOptions.get()),
 	};
 	for (const connectorKey in DEFAULT_CONNECTOR_OPTIONS) {
-		const typedKey = connectorKey as keyof ConnectorOptions;
-		connectorData[typedKey] = {
-			...DEFAULT_CONNECTOR_OPTIONS[typedKey],
-			...connectorData[typedKey],
-		};
+		applyConnectorDefaults(connectorKey as keyof ConnectorOptions);
 	}
 	await connectorsOptions.set(connectorData);
 
 	void connectorsOptions.debugLog();
 	void connectorsOverrideOptions.debugLog();
+
+	function applyConnectorDefaults<K extends keyof ConnectorOptions>(key: K) {
+		connectorData[key] = {
+			...DEFAULT_CONNECTOR_OPTIONS[key],
+			...connectorData[key],
+		};
+	}
 }
 
 async function cleanupConfigValues() {
@@ -267,7 +276,9 @@ export async function getConnectorOption(
 	}
 
 	const data = await connectorsOptions.get();
-	return data?.[connector][key];
+	const connectorValues: Record<string, boolean> | undefined =
+		data?.[connector];
+	return connectorValues?.[key];
 }
 
 export async function setConnectorOption(
@@ -286,7 +297,8 @@ export async function setConnectorOption(
 	if (!data?.[connector]) {
 		throw new Error(`Connector ${connector} not found in storage`);
 	}
-	data[connector][key] = value;
+	const connectorValues: Record<string, boolean> = data[connector];
+	connectorValues[key] = value;
 
 	await connectorsOptions.set(data);
 }
@@ -347,7 +359,7 @@ function assertValidConnector(
 function assertValidConnectorOptionKey(
 	connector: keyof ConnectorOptions,
 	key: string,
-): key is keyof ConnectorOptions[keyof ConnectorOptions] {
+): boolean {
 	if (!(key in DEFAULT_CONNECTOR_OPTIONS[connector])) {
 		throw new Error(`Unknown connector option key: ${key}`);
 	}

@@ -19,15 +19,30 @@ const getStationId = () => {
 };
 
 const stationId = getStationId();
-let station = stationId
-	? filterStationNames(
-			createFallbackStation(
-				stationId,
-				document.title.replace(/ \| RadioCult$/, ''),
-			),
-			true,
+let rawStation = stationId
+	? createFallbackStation(
+			stationId,
+			document.title.replace(/ \| RadioCult$/, ''),
 		)
 	: null;
+let shouldStripTrademarkSymbols = true;
+let station = rawStation
+	? filterStationNames(rawStation, shouldStripTrademarkSymbols)
+	: null;
+
+function updateStation() {
+	station = rawStation
+		? filterStationNames(rawStation, shouldStripTrademarkSymbols)
+		: null;
+	Connector.onStateChanged();
+}
+
+void Util.getOption('RadioCult', 'stripTrademarkSymbols', true).then(
+	(value) => {
+		shouldStripTrademarkSymbols = value;
+		updateStation();
+	},
+);
 
 if (stationId) {
 	void fetch(
@@ -42,14 +57,11 @@ if (stationId) {
 			return response.json();
 		})
 		.then((response: unknown) => {
-			station = filterStationNames(
-				{
-					...parseRadioCultStation(stationId, response),
-					...stationOverrides[stationId],
-				},
-				true,
-			);
-			Connector.onStateChanged();
+			rawStation = {
+				...parseRadioCultStation(stationId, response),
+				...stationOverrides[stationId],
+			};
+			updateStation();
 		})
 		.catch((error: unknown) => {
 			Util.debugLog(

@@ -712,27 +712,25 @@ export function queryElements<ElementT extends Element = HTMLElement>(
  * Read connector option from storage.
  * @param connector - Connector name
  * @param key - Option key
+ * @param defaultValue - Value used when the option has not been initialized
  * @returns Option value
  */
 /* istanbul ignore next */
 export async function getOption(
 	connector: string,
 	key: string,
+	defaultValue = false,
 ): Promise<boolean> {
 	const data = await BrowserStorage.getStorage(
 		BrowserStorage.CONNECTORS_OPTIONS,
 	).get();
-	if (
-		data &&
-		connector in data &&
-		key in data[connector as keyof ConnectorOptions]
-	) {
-		return data[connector as keyof ConnectorOptions][
-			key as keyof ConnectorOptions[keyof ConnectorOptions]
-		];
+	const connectorValues: Record<string, boolean> | undefined =
+		data?.[connector as keyof ConnectorOptions];
+	if (connectorValues && Object.hasOwn(connectorValues, key)) {
+		return connectorValues[key];
 	}
 	debugLog(`Option ${key} for connector ${connector} not found`, 'warn');
-	return false;
+	return defaultValue;
 }
 
 /**

@@ -135,6 +135,14 @@
         "message": "of song duration",
         "description": "Option title"
     },
+    "optionRadioCultStripTrademarkSymbols": {
+        "message": "Remove trademark symbols from station names",
+        "description": "RadioCult option label"
+    },
+    "optionRadioCultStripTrademarkSymbolsTitle": {
+        "message": "Remove registered trademark and trademark symbols from RadioCult station labels and names",
+        "description": "RadioCult option title"
+    },
     "optionYtDesc": {
         "message": "If you turn off both options, the extension will scrobble YouTube videos from all categories.",
         "description": "Description of YouTube options"

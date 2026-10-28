@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import '#/mocks/webextension-polyfill';
+import webextensionPolyfill from '#/mocks/webextension-polyfill';
+import browser from 'webextension-polyfill';
 import BaseConnector from '@/core/content/connector';
 import connectors from '@/core/connectors';
 import * as Util from '@/core/content/util';
@@ -30,6 +31,7 @@ describe('RadioCult connector', () => {
 
 	beforeEach(() => {
 		vi.resetModules();
+		webextensionPolyfill.reset();
 		vi.useFakeTimers();
 		connector = new BaseConnector(meta);
 		connector.onStateChanged = vi.fn();
@@ -168,5 +170,43 @@ describe('RadioCult connector', () => {
 		expect(fetchStation).toHaveBeenCalledWith(
 			'https://api.radiocult.fm/api/station/20ft%20Radio',
 		);
+	});
+
+	it('preserves station trademarks when the option is disabled', async () => {
+		await browser.storage.sync.set({
+			Connectors: { RadioCult: { stripTrademarkSymbols: false } },
+		});
+		await import('@/connectors/radiocult');
+		await vi.advanceTimersByTimeAsync(0);
+		expect(connector.getChannelLabel?.()).toBe(
+			'Mountain Chill® - KRKQ 95.5 FM',
+		);
+		expect(connector.getStation()?.name).toBe('Mountain Chill®');
+	});
+
+	it('preserves fallback trademarks when the option is disabled and the API fails', async () => {
+		await browser.storage.sync.set({
+			Connectors: { RadioCult: { stripTrademarkSymbols: false } },
+		});
+		fetchStation.mockRejectedValue(new Error('Network failed'));
+		await import('@/connectors/radiocult');
+		await vi.advanceTimersByTimeAsync(0);
+		expect(connector.getChannelLabel?.()).toBe(
+			'Mountain Chill® - KRKQ 95.5 FM',
+		);
+	});
+
+	it('reapplies a delayed option to unfiltered API metadata', async () => {
+		let resolveOption!: (value: boolean) => void;
+		const option = new Promise<boolean>((resolve) => {
+			resolveOption = resolve;
+		});
+		vi.stubGlobal('Util', { ...Util, getOption: () => option, debugLog });
+		await import('@/connectors/radiocult');
+		await vi.advanceTimersByTimeAsync(0);
+		expect(connector.getStation()?.name).toBe('Mountain Chill');
+		resolveOption(false);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(connector.getStation()?.name).toBe('Mountain Chill®');
 	});
 });
