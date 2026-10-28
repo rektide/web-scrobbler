@@ -16,7 +16,7 @@ export const test = testBase.extend<Fixtures>({
 			const network = defineNetworkFixture({
 				context,
 				handlers,
-				onUnhandledRequest: 'warn',
+				onUnhandledFrame: 'warn',
 			});
 
 			await network.enable();
