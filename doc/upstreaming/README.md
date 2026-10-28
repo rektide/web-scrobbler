@@ -53,9 +53,12 @@ This is not deployed or accepted upstream. Missing production endpoints,
 coordinated website/extension rollout and live authorization/Firefox runtime
 verification remain open. The combined development history is now preserved as
 `teal-assemblage-20261028`; [focused feature histories](/doc/upstreaming/splits.md)
-track the RadioCult series and AT Protocol reconstruction. Historical
-investigation and the pre-rework verification baseline below remain evidence,
-not current architecture or the focused branches' check results.
+now record the reviewed `radiocult` and `atproto` bookmarks and their independent
+workspaces. Both focused series pass full native lint, types, tests and Chrome /
+Firefox builds; the AT Protocol split also removes the optional MSW peer
+mismatch. Historical investigation and the pre-rework verification baseline
+below remain evidence, not current architecture or the focused branches' check
+results.
 
 This assessment preserves the starting history by revision: original base
 `577ed01d`, committed tip `c7901584`, working snapshot `0a26101b`. The original

@@ -6,6 +6,10 @@ resource: /doc/upstreaming/oauth.md
 status: draft
 generated: { by: "model:openai/gpt-6.1-sol#xhigh", at: 2026-10-28 }
 sources:
+  - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
+    title: Review the implemented lifecycle and connect its preserved source to the completed focused AT Protocol series
+  - resource: /doc/upstreaming/splits.md
+    title: Completed feature bookmarks, unchanged production OAuth and focused-series verification
   - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
     title: Implement and verify durable extension-owned OAuth and the coordinated local companion relay; preserve assemblage WIP
   - resource: /doc/upstreaming/README.md
@@ -32,6 +36,12 @@ Implemented locally on the existing assemblage branch, without splitting,
 squashing, moving bookmarks, pushing or deploying. The
 [readiness assessment](/doc/upstreaming/README.md) retains the earlier failure
 evidence and packaging work; this account describes the replacement.
+
+The subsequent [focused AT Protocol series](/doc/upstreaming/splits.md#at-protocol-series)
+preserves this production implementation and passes full native lint with a clean
+dependency tree. The implementation and test evidence below refer to the
+original combined-workspace rework; the split account owns later packaging and
+verification results.
 
 ## Implementation and revisions
 

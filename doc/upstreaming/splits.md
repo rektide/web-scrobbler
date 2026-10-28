@@ -3,7 +3,7 @@ type: Delivery
 title: Focused AT Protocol and RadioCult histories
 description: Preserved combined-workspace checkpoint, independent feature workspaces, shared station prerequisite and reviewed commit-series evidence.
 resource: /doc/upstreaming/splits.md
-status: draft
+status: locally-verified
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
@@ -13,7 +13,7 @@ sources:
   - resource: "opencode://ses_e7b88eb78ffeCR6oYbG63P1bAD"
     title: Sol high reconstructs and verifies the generic station prerequisite and clean RadioCult layers
   - resource: "opencode://ses_e7b6ccdccffe4hTfEU6PzkrWbf"
-    title: Separate Sol high commissioned to reconstruct the AT Protocol series from the preserved OAuth result
+    title: Separate Sol high reconstructs and verifies the AT Protocol layers, preserving OAuth and replacing MSW with native Playwright routing
   - resource: "urn:jj:commit:81942226ea5d080c8e8dc7e3d16e8827ba9d7cbd"
     title: Complete combined workspace checkpoint after the OAuth rewrite
   - resource: "urn:jj:commit:0eb87a1c0f67ec57da21a873200c97188b67dbba"
@@ -24,6 +24,10 @@ sources:
     title: Historical upstream-readiness review and original development-stack concerns
   - resource: "file:///home/rektide/src/web-scrobbler-radiocult/.test-agent/radiocult-split/README.md"
     title: RadioCult source-scope comparison and exact per-layer checks
+  - resource: "file:///home/rektide/src/web-scrobbler-atproto/.test-agent/atproto-split/README.md"
+    title: AT Protocol source comparison, clean dependency tree and per-layer/final verification
+  - resource: "file:///home/rektide/src/web-scrobbler-atproto/doc/atproto.md"
+    title: Focused contributor-facing AT Protocol guide and callback rollout contract
 ---
 
 # Focused AT Protocol and RadioCult histories
@@ -34,12 +38,18 @@ sources:
 | --- | --- | --- |
 | Preserved combined implementation and local artifacts | `/home/rektide/src/web-scrobbler-teal` | `teal-assemblage-20261028` → `81942226` |
 | RadioCult submission series | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `3cacceab` |
-| AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | Reconstruction commissioned; existing `atproto` name will move after review |
+| AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `e1267413` |
 
 The feature workspaces share the same JJ repository. Their working directories
 and npm installations are separate. The parent retains the historical assemblage
 and this account; workspace-specific assessments and generated artifacts are
 excluded from the focused submission histories.
+
+Both feature workspaces have clean, empty working-copy children of their
+completed tips. The parent verified the bookmark targets, shared fork point,
+workspace identities and absence of the other feature's source code. The old
+local `atproto` name was moved sideways only after review; its former development
+history remains in the dated assemblage. Remote bookmarks were not pushed.
 
 ## Preserved assemblage
 
@@ -129,15 +139,56 @@ agent's successful checks.
 
 ## AT Protocol series
 
-Commissioned to a separate Sol high after the OAuth rewrite and assemblage
-checkpoint. Its immutable feature source is `81942226`; the exact common base
-is `0eb87a1c`. It is to reconstruct semantic, checked layers with the current
-extension-owned OAuth lifecycle and source-built browser verification, while
-excluding RadioCult-specific code and development-history packaging artifacts.
+Completed by a separate Sol high after the OAuth rewrite and assemblage
+checkpoint. Its archived feature source is `81942226`, with extraction reads
+bound to the identical production-code tip `d4e39777`; the exact common base
+is `0eb87a1c`.
 
-The reconstruction also owns a clean resolution of the assemblage's optional
-Vitest/MSW dependency mismatch. Its completed commits, verification and bookmark
-assignment will be recorded here after return and review.
+| Layer after the common prerequisite | Commit | Purpose |
+| --- | --- | --- |
+| Records | `1b2c1efcaba60c788eb7cef935880eadf0a27711` | Stable Teal/Rocksky mapping, destination vocabulary and mapping tests |
+| Complete feature | `0316c77504b6a9356d1b81132969e471b8afa3e5` | Durable extension-owned OAuth, scrobbler, account UI, localized labels, callback boundaries and native unit coverage |
+| Browser verification | `e1267413e77b12c2ddaf93ae5586bb6643757106` | Source-built Chromium harness, native network routing, six browser cases and contributor guide |
+
+The production AT Protocol modules, content callback relay and account component
+are byte-for-byte equal to the reviewed OAuth result. Parent comparison verified
+that boundary directly. RadioCult connector/options/localization and its
+`getTabUrl` / `topLevelUrl` plumbing are absent. Generic station consumption is
+retained through the common prerequisite; tests use neutral station fixtures.
+
+The split replaces MSW and its adapter with Playwright's native request routing.
+All six substantive browser cases remain, record captures are isolated per test,
+and unmocked external HTTPS requests fail. This removes the optional Vitest/MSW
+peer mismatch without changing upstream's Vitest or TypeScript configurations.
+Mapping coverage is expanded, and five scrobbler checks cover destination
+selection, native failure results, explicit legacy cleanup and no-op features.
+
+Only required dependencies are added. The agent's lock comparison found no
+changes to existing upstream package entries and no atcute resolution differences
+from the archive. The unused direct `@atcute/client` dependency is omitted;
+test-imported OAuth crypto is a development dependency. No generated bundles,
+pnpm files, transcript, result files or workspace assessments enter this series.
+
+### AT Protocol verification
+
+Reported by its implementing agent on Node **24.21.0** / npm **11.19.0**:
+
+- Relevant types/tests/lint and Chrome builds passed at each semantic layer.
+- Final real clean `npm ci --strict-peer-deps` and `npm ls --all` passed.
+- Both native TypeScript projects and all five native linters passed.
+- **2,189 unit tests** across 14 files and **six source-built Chromium tests**
+  passed after the clean install.
+- Chrome and Firefox distributions passed.
+- A freshly packaged Chromium smoke check passed native storage/Web Locks,
+  storage-driven account updates, full browser restart and signout preserving
+  preferences. It used a synthetic session, not a live account authorization.
+- Native Markdown and knowledge-document checks passed for the
+  [contributor guide](file:///home/rektide/src/web-scrobbler-atproto/doc/atproto.md).
+
+No blocking local dependency, build, type, test or lint issue is known for the
+focused series. Parent review checked production equality, the replacement
+network fixture, record/error tests, native dependency changes and the contributor
+contract. It did not redundantly rerun the successful agent checks.
 
 ## Rollout boundary
 
