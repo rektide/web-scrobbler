@@ -1,5 +1,5 @@
 import type { ConnectorMeta } from '@/core/connectors';
-import type { State } from '@/core/types';
+import type { State, Station } from '@/core/types';
 import type { DisallowedReason } from './disallowed-reason';
 
 export interface ProcessedSongData {
@@ -14,6 +14,7 @@ export interface ParsedSongData extends ProcessedSongData {
 	trackArt?: string | null;
 	uniqueID?: string | null;
 	originUrl?: string | null;
+	station?: Station | null;
 	isPodcast?: boolean | null;
 	isPlaying?: boolean | null;
 	currentTime?: number | null;
@@ -159,6 +160,14 @@ export abstract class BaseSong {
 	 */
 	getOriginUrl(): string | undefined | null {
 		return this.parsed.originUrl;
+	}
+
+	/**
+	 * Get the broadcast station associated with the song.
+	 * @returns Station metadata supplied by the connector
+	 */
+	getStation(): Station | undefined | null {
+		return this.parsed.station;
 	}
 
 	/**

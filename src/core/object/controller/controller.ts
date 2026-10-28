@@ -869,6 +869,7 @@ export default class Controller {
 			isPlaying,
 			trackArt,
 			duration,
+			station,
 			scrobblingDisallowedReason,
 		} = newState;
 		const isPlayingStateChanged =
@@ -877,6 +878,7 @@ export default class Controller {
 		this.currentSong.parsed.currentTime = currentTime;
 		this.currentSong.parsed.isPlaying = isPlaying;
 		this.currentSong.parsed.trackArt = trackArt;
+		this.currentSong.parsed.station = station;
 		this.currentSong.parsed.scrobblingDisallowedReason =
 			scrobblingDisallowedReason;
 
