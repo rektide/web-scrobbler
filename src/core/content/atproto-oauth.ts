@@ -1,34 +1,45 @@
 import { sendContentMessage } from '@/util/communication';
-import { oauthMessageOrigin } from '@/core/scrobbler/atproto/oauth-config';
-
-const OAUTH_MESSAGE_TYPE = 'web-scrobbler-teal/oauth-session';
+import {
+	isOAuthCallbackUrl,
+	oauthMessageOrigin,
+	OAUTH_CALLBACK_MESSAGE,
+	OAUTH_CALLBACK_RESULT,
+} from '@/core/scrobbler/atproto/oauth-config';
+import { isOAuthCallbackSearch } from '@/core/scrobbler/atproto/oauth-messages';
 
 export function atprotoOAuthListen(): void {
-	window.addEventListener('message', (event) => {
-		if (event.origin !== oauthMessageOrigin) {
+	let received = false;
+	window.addEventListener('message', (event: MessageEvent<unknown>) => {
+		if (
+			received ||
+			event.source !== window ||
+			event.origin !== oauthMessageOrigin ||
+			!isOAuthCallbackUrl(window.location.href)
+		) {
 			return;
 		}
-
-		if (event.data?.type !== OAUTH_MESSAGE_TYPE) {
+		const data = event.data as { type?: unknown; search?: unknown } | null;
+		if (
+			data?.type !== OAUTH_CALLBACK_MESSAGE ||
+			!isOAuthCallbackSearch(data.search)
+		) {
 			return;
 		}
-
-		const { session, handle } = event.data;
-		if (!session?.info?.sub || !session?.info?.aud) {
-			return;
-		}
-
-		const sessionID = session.info.sub as string;
-
-		sendContentMessage({
-			type: 'atprotoOAuthSession',
-			payload: {
-				session: {
-					sessionID,
-					sessionName: handle ?? sessionID,
-					oauthSession: session,
-				},
-			},
-		});
+		received = true;
+		void sendContentMessage({
+			type: 'atprotoOAuthCallback',
+			payload: { search: data.search },
+		}).then(
+			(result) =>
+				window.postMessage(
+					{ type: OAUTH_CALLBACK_RESULT, ok: result.ok },
+					oauthMessageOrigin,
+				),
+			() =>
+				window.postMessage(
+					{ type: OAUTH_CALLBACK_RESULT, ok: false },
+					oauthMessageOrigin,
+				),
+		);
 	});
 }

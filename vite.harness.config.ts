@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import ConditionalCompile from 'vite-plugin-conditional-compiler';
+import solid from 'vite-plugin-solid';
 
 export default defineConfig({
 	resolve: {
@@ -25,7 +26,7 @@ export default defineConfig({
 				'https://rektide.github.io',
 		),
 	},
-	plugins: [ConditionalCompile()],
+	plugins: [ConditionalCompile(), solid()],
 	build: {
 		outDir: resolve(__dirname, 'build/e2e-harness'),
 		emptyOutDir: true,

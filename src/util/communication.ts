@@ -5,7 +5,6 @@ import type { ServiceCallResult } from '@/core/object/service-call-result';
 import type { CloneableSong } from '@/core/object/song';
 import type { ScrobblerSongInfo } from '@/core/scrobbler/base-scrobbler';
 import type { ManagerTab } from '@/core/storage/wrapper';
-import type { Session } from '@atcute/oauth-browser-client';
 import browser from 'webextension-polyfill';
 
 /**
@@ -127,15 +126,17 @@ interface ContentCommunications {
 		payload: undefined;
 		response: boolean;
 	};
-	atprotoOAuthSession: {
-		payload: {
-			session: {
-				sessionID: string;
-				sessionName: string;
-				oauthSession: Session;
-			};
-		};
-		response: void;
+	atprotoOAuthCallback: {
+		payload: { search: string };
+		response: { ok: boolean };
+	};
+	atprotoAuthorize: {
+		payload: { identifier: string };
+		response: { ok: boolean };
+	};
+	atprotoSignOut: {
+		payload: undefined;
+		response: { ok: boolean };
 	};
 }
 

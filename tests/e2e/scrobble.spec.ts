@@ -20,12 +20,7 @@ test('scrobble writes fm.teal.feed.play record to PDS', async ({ page }) => {
 	await page.waitForFunction(() => window.ready === true);
 
 	await page.evaluate(async () => {
-		const session = window.testSession;
-		await window.atproto.storeOAuthSession({
-			sessionID: session.info.sub,
-			sessionName: 'test.bsky.social',
-			oauthSession: session,
-		});
+		await window.seedSession();
 	});
 
 	const song = {
@@ -77,12 +72,7 @@ test('scrobble writes app.rocksky.scrobble record to PDS', async ({ page }) => {
 	await page.waitForFunction(() => window.ready === true);
 
 	await page.evaluate(async () => {
-		const session = window.testSession;
-		await window.atproto.storeOAuthSession({
-			sessionID: session.info.sub,
-			sessionName: 'test.bsky.social',
-			oauthSession: session,
-		});
+		await window.seedSession();
 	});
 
 	const result = await page.evaluate((connector) => {

@@ -1,8 +1,7 @@
 import { t } from '@/util/i18n';
 import type { Scrobbler, ScrobblerLabel } from '@/core/object/scrobble-service';
 import ScrobbleService from '@/core/object/scrobble-service';
-import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
-import { AT_PROTO_LEXICONS } from '@/core/storage/wrapper';
+import AtProtoAccount from './atproto-account';
 import {
 	For,
 	Show,
@@ -12,7 +11,6 @@ import {
 	createResource,
 	createSignal,
 	onCleanup,
-	onMount,
 } from 'solid-js';
 import styles from './components.module.scss';
 import browser from 'webextension-polyfill';
@@ -99,7 +97,7 @@ export default function Accounts() {
 			<ScrobblerDisplay label="Maloja" />
 			<ScrobblerDisplay label="Webhook" />
 			<ScrobblerDisplay label="Pleroma" />
-			<ScrobblerDisplay label="AtProto" />
+			<AtProtoAccount />
 		</>
 	);
 }
@@ -125,37 +123,12 @@ function ScrobblerDisplay(props: { label: ScrobblerLabel }) {
 	});
 	const [showLocalProps, setShowLocalProps] = createSignal(false);
 
-	const POLL_INTERVAL = 150;
-	const POLL_ATTEMPTS = 4;
-
-	const pollForSession = async () => {
-		const scrobbler = rawScrobbler();
-		if (!scrobbler) return;
-
-		for (let i = 0; i < POLL_ATTEMPTS; i++) {
-			try {
-				await scrobbler.getSession();
-				setSession.refetch();
-				setProfileUrl.refetch();
-				return;
-			} catch {
-				if (i < POLL_ATTEMPTS - 1) {
-					await new Promise((r) => setTimeout(r, POLL_INTERVAL));
-				}
-			}
-		}
-	};
-
 	const onFocus = async () => {
 		try {
 			if (await rawScrobbler()?.isReadyForGrantAccess()) {
-				if (rawScrobbler()?.getLabel() === 'AtProto') {
-					await pollForSession();
-				} else {
-					await rawScrobbler()?.getSession();
-					setSession.refetch();
-					setProfileUrl.refetch();
-				}
+				await rawScrobbler()?.getSession();
+				setSession.refetch();
+				setProfileUrl.refetch();
 			}
 		} catch (err) {
 			debugLog(
@@ -223,9 +196,6 @@ function ScrobblerDisplay(props: { label: ScrobblerLabel }) {
 					</div>
 				</Match>
 			</Switch>
-			<Show when={rawScrobbler()?.getLabel() === 'AtProto' && !session.error && session()}>
-				<AtProtoLexiconCheckboxes />
-			</Show>
 			<Switch>
 				<Match
 					when={
@@ -273,42 +243,6 @@ function SignedOut(props: { scrobbler: Scrobbler | null }) {
 				{t('accountsSignIn')}
 			</button>
 		</>
-	);
-}
-
-function AtProtoLexiconCheckboxes() {
-	const scrobbler = createMemo(() =>
-		ScrobbleService.getScrobblerByLabel('AtProto') as AtProtoScrobbler | null,
-	);
-	const [lexicons, setLexicons] = createSignal<Record<string, boolean>>({});
-
-	onMount(async () => {
-		if (scrobbler()) {
-			const config = await scrobbler()!.getEnabledLexicons();
-			setLexicons(config);
-		}
-	});
-
-	return (
-		<div style={{ 'margin-top': '0.5rem' }}>
-			<h3>Scrobble to:</h3>
-			<For each={AT_PROTO_LEXICONS}>
-				{(lexicon) => (
-					<label style={{ display: 'block', 'margin-top': '0.25rem' }}>
-						<input
-							type="checkbox"
-							checked={lexicons()[lexicon.id] ?? true}
-							onChange={(e) => {
-								const checked = e.currentTarget.checked;
-								setLexicons((prev) => ({ ...prev, [lexicon.id]: checked }));
-								scrobbler()?.setLexiconEnabled(lexicon.id, checked);
-							}}
-						/>
-						{` ${lexicon.label}`}
-					</label>
-				)}
-			</For>
-		</div>
 	);
 }
 

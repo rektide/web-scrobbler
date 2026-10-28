@@ -69,12 +69,6 @@ export type ArrayProperty = {
 
 export type ArrayProperties = ArrayProperty[];
 
-import type { Session as AtProtoSession } from '@atcute/oauth-browser-client';
-
-export interface AtProtoAuthStarted {
-	isAuthStarted?: boolean;
-}
-
 export type AtProtoLexiconId = 'teal' | 'rocksky';
 
 export const AT_PROTO_LEXICONS: {
@@ -88,14 +82,14 @@ export const AT_PROTO_LEXICONS: {
 
 export type AtProtoLexiconConfig = Record<AtProtoLexiconId, boolean>;
 
-export interface AtProtoAuthFinished {
+export interface AtProtoModel {
+	/** Legacy browser-client fields are preserved but never restored. */
+	isAuthStarted?: boolean;
 	sessionID?: string;
 	sessionName?: string;
-	oauthSession?: AtProtoSession;
+	oauthSession?: unknown;
 	lexicons?: AtProtoLexiconConfig;
 }
-
-export type AtProtoModel = AtProtoAuthStarted | AtProtoAuthFinished;
 
 export interface ScrobblerModels {
 	LastFM?: { token?: string } | { sessionID?: string; sessionName?: string };

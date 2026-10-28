@@ -2,15 +2,18 @@ import { ServiceCallResult } from '@/core/object/service-call-result';
 import type { BaseSong } from '@/core/object/song';
 import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
-import type {
-	AtProtoModel,
-	AtProtoLexiconConfig,
-} from '@/core/storage/wrapper';
-import type { Session } from '@atcute/oauth-browser-client';
+import type { AtProtoLexiconConfig } from '@/core/storage/wrapper';
 import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
-import { createAtProtoClient, AtProtoClient, initAtcute } from './atcute-client';
+import { createAtProtoClient, AtProtoClient } from './atcute-client';
 import { mapSongToRecord } from './field-mapping';
-import { oauthConnectUrl } from './oauth-config';
+import {
+	getOAuthAccount,
+	oauthClient,
+	requestOAuthLock,
+	signOutAtProto,
+} from './oauth-client';
+import { sendContentMessage } from '@/util/communication';
+import browser from 'webextension-polyfill';
 
 const DEFAULT_LEXICONS: AtProtoLexiconConfig = {
 	teal: true,
@@ -21,37 +24,31 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	public isLocalOnly = false;
 
 	public async getAuthUrl(): Promise<string> {
-		await this.storage.set({ isAuthStarted: true });
-		return oauthConnectUrl;
+		return browser.runtime.getURL('src/ui/options/index.html?p=accounts');
 	}
 
 	public async getSession(): Promise<SessionData> {
-		const data = await this.storage.get();
-		if (!data) {
-			this.debugLog('no data', 'error');
-			throw new Error(ServiceCallResult.ERROR_AUTH);
-		}
-
-		if ('isAuthStarted' in data && data.isAuthStarted) {
-			throw new Error(ServiceCallResult.ERROR_AUTH);
-		}
-
-		if (!('sessionID' in data) || !data.sessionID) {
+		const account = await getOAuthAccount();
+		if (!account) {
 			throw new Error(ServiceCallResult.ERROR_AUTH);
 		}
 
 		return {
-			sessionID: data.sessionID,
-			sessionName: 'sessionName' in data ? data.sessionName : undefined,
+			sessionID: account.did,
+			sessionName: account.did,
 		};
 	}
 
 	public async isReadyForGrantAccess(): Promise<boolean> {
+		return false;
+	}
+
+	public async needsReauthorization(): Promise<boolean> {
 		const data = await this.storage.get();
-		if (!data || !('isAuthStarted' in data)) {
-			return false;
-		}
-		return data.isAuthStarted ?? false;
+		return (
+			!(await getOAuthAccount()) &&
+			Boolean(data?.oauthSession || data?.sessionID)
+		);
 	}
 
 	public async sendNowPlaying(): Promise<ServiceCallResult> {
@@ -70,6 +67,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		songs: BaseSong[],
 		_currentlyPlaying: boolean,
 	): Promise<ServiceCallResult[]> {
+		void _currentlyPlaying;
 		const client = await this.getAtProtoClient();
 		if (!client) {
 			return new Array<ServiceCallResult>(songs.length).fill(
@@ -83,7 +81,12 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		for (const song of songs) {
 			let songOk = true;
 			for (const lexicon of LEXICONS) {
-				if (!(lexicon.id in enabledLexicons) || !enabledLexicons[lexicon.id]) continue;
+				if (
+					!(lexicon.id in enabledLexicons) ||
+					!enabledLexicons[lexicon.id]
+				) {
+					continue;
+				}
 				try {
 					const record = mapSongToRecord(lexicon.id, song);
 					await client.createRecord(
@@ -94,13 +97,19 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 					songOk = false;
 				}
 			}
-			results.push(songOk ? ServiceCallResult.RESULT_OK : ServiceCallResult.ERROR_OTHER);
+			results.push(
+				songOk
+					? ServiceCallResult.RESULT_OK
+					: ServiceCallResult.ERROR_OTHER,
+			);
 		}
 
 		return results;
 	}
 
-	public async toggleLove(): Promise<ServiceCallResult | Record<string, never>> {
+	public async toggleLove(): Promise<
+		ServiceCallResult | Record<string, never>
+	> {
 		return Promise.resolve({});
 	}
 
@@ -125,39 +134,37 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 	}
 
 	public async signOut(): Promise<void> {
-		await this.storage.set({});
-	}
-
-	public async storeOAuthSession(session: {
-		sessionID: string;
-		sessionName: string;
-		oauthSession: Session;
-	}): Promise<void> {
-		const data = await this.storage.get();
-		const lexicons = (data && 'lexicons' in data && data.lexicons) || DEFAULT_LEXICONS;
-		await this.storage.set({
-			sessionID: session.sessionID,
-			sessionName: session.sessionName,
-			oauthSession: session.oauthSession,
-			lexicons,
+		const result = await sendContentMessage({
+			type: 'atprotoSignOut',
+			payload: undefined,
 		});
+		if (!result.ok) {
+			throw new Error('AT Protocol signout failed');
+		}
 	}
 
-	public async getOAuthSession(): Promise<Session | null> {
-		const data = await this.storage.get();
-		if (!data || !('oauthSession' in data)) {
-			return null;
+	public async clearAuthorization(): Promise<void> {
+		await signOutAtProto();
+		// Explicit signout also forgets legacy credentials, but preserves preferences.
+		const { AtProto: legacy } = await browser.storage.local.get('AtProto');
+		if (legacy && typeof legacy === 'object') {
+			const data: Record<string, unknown> = { ...legacy };
+			delete data.sessionID;
+			delete data.sessionName;
+			delete data.oauthSession;
+			delete data.isAuthStarted;
+			await browser.storage.local.set({ AtProto: data });
 		}
-		return data.oauthSession ?? null;
 	}
 
 	public async getAtProtoClient(): Promise<AtProtoClient | null> {
-		await initAtcute();
-		const session = await this.getOAuthSession();
-		if (!session) {
-			return null;
-		}
-		return createAtProtoClient(session);
+		return requestOAuthLock('lifecycle', async () => {
+			const account = await getOAuthAccount();
+			if (!account) {
+				return null;
+			}
+			return createAtProtoClient(await oauthClient.restore(account.did));
+		});
 	}
 
 	public async getEnabledLexicons(): Promise<AtProtoLexiconConfig> {

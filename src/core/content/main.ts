@@ -9,7 +9,7 @@ import savedEdits from '../storage/saved-edits';
 import regexEdits from '../storage/regex-edits';
 import { webhookListenForApproval } from './webhook';
 import { atprotoOAuthListen } from './atproto-oauth';
-import { oauthPathPrefix } from '@/core/scrobbler/atproto/oauth-config';
+import { isOAuthCallbackUrl } from '@/core/scrobbler/atproto/oauth-config';
 
 main();
 async function main() {
@@ -21,9 +21,7 @@ async function main() {
 			webhookListenForApproval();
 			return;
 		}
-		if (
-			window.location.href.startsWith(oauthPathPrefix)
-		) {
+		if (window === top && isOAuthCallbackUrl(window.location.href)) {
 			atprotoOAuthListen();
 			return;
 		}

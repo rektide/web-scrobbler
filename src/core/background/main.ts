@@ -48,8 +48,15 @@ import {
 } from './scrobble';
 import scrobbleService from '../object/scrobble-service';
 import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
-import { initAtcute } from '@/core/scrobbler/atproto/atcute-client';
-import { oauthPathPrefix } from '@/core/scrobbler/atproto/oauth-config';
+import {
+	authorizeAtProto,
+	completeAtProtoAuthorization,
+} from '@/core/scrobbler/atproto/oauth-client';
+import {
+	isOAuthCallbackSearch,
+	isOAuthCallbackSender,
+	isOAuthOptionsSender,
+} from '@/core/scrobbler/atproto/oauth-messages';
 import { fetchListenBrainzProfile } from '@/util/util';
 
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
@@ -540,30 +547,55 @@ setupBackgroundListeners(
 	}),
 
 	backgroundListener({
-		type: 'atprotoOAuthSession',
+		type: 'atprotoOAuthCallback',
 		fn: async (payload, sender) => {
 			if (
-				!sender.url?.startsWith(oauthPathPrefix)
+				!isOAuthCallbackSender(sender) ||
+				!isOAuthCallbackSearch(payload?.search)
 			) {
-				console.warn(
-					'atprotoOAuthSession: rejected from unexpected sender',
-					sender.url,
-				);
-				return;
+				return { ok: false };
 			}
-
-			const scrobbler = scrobbleService.getScrobblerByLabel(
-				'AtProto',
-			) as AtProtoScrobbler | null;
-			if (!scrobbler) {
-				console.error('atprotoOAuthSession: AtProto scrobbler not found');
-				return;
+			try {
+				await completeAtProtoAuthorization(payload.search);
+				return { ok: true };
+			} catch {
+				// Never log the callback, tokens or server-supplied error descriptions.
+				return { ok: false };
 			}
-
-			await scrobbler.storeOAuthSession(payload.session);
-			console.log(
-				`atprotoOAuthSession: stored session for ${payload.session.sessionName}`,
-			);
+		},
+	}),
+	backgroundListener({
+		type: 'atprotoAuthorize',
+		fn: async (payload, sender) => {
+			if (
+				!isOAuthOptionsSender(sender) ||
+				typeof payload?.identifier !== 'string'
+			) {
+				return { ok: false };
+			}
+			try {
+				await authorizeAtProto(payload.identifier);
+				return { ok: true };
+			} catch {
+				return { ok: false };
+			}
+		},
+	}),
+	backgroundListener({
+		type: 'atprotoSignOut',
+		fn: async (_, sender) => {
+			if (!isOAuthOptionsSender(sender)) {
+				return { ok: false };
+			}
+			try {
+				const scrobbler = scrobbleService.getScrobblerByLabel(
+					'AtProto',
+				) as AtProtoScrobbler;
+				await scrobbler.clearAuthorization();
+				return { ok: true };
+			} catch {
+				return { ok: false };
+			}
 		},
 	}),
 );
@@ -608,7 +640,6 @@ function onStartup() {
 
 	setRegexDefaults();
 	updateVersionInStorage();
-	initAtcute();
 	bindScrobblers().then((bound) => {
 		if (!bound) {
 			console.warn('No scrobblers are bound');
