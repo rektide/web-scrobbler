@@ -1,6 +1,7 @@
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  canvas: set this to true or false
-  esbuild: set this to true or false
-  jpegtran-bin: set this to true or false
-  pngquant-bin: set this to true or false
+  '@parcel/watcher': true
+  canvas: true
+  esbuild: true
+  jpegtran-bin: true
+  msw: true
+  pngquant-bin: true
