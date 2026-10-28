@@ -11,7 +11,9 @@ sources:
   - resource: /doc/upstreaming/oauth.md
     title: Current OAuth architecture, exact implementation revisions, checks and rollout limits
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
-    title: Commission and integrate the upstream update and OAuth investigation; review commit boundaries, approve the test-dependency fix and verify production endpoint availability
+    title: Commission and integrate upstream/OAuth work, preserve the complete assemblage, and review separately reconstructed feature histories
+  - resource: /doc/upstreaming/splits.md
+    title: Dated assemblage checkpoint and focused feature workspaces, layers and verification
   - resource: "opencode://ses_e7ba21be0ffeCZKevhCOYnzpbs"
     title: G rebases against upstream, fixes source-built tests and npm dependencies, then verifies types, tests and builds
   - resource: "opencode://ses_e7ba1cc5effe06Tlaoh9uMJr6t"
@@ -49,9 +51,11 @@ packaged Chromium restart checks, and remaining limits.
 
 This is not deployed or accepted upstream. Missing production endpoints,
 coordinated website/extension rollout and live authorization/Firefox runtime
-verification remain open. The history is still a development stack requiring
-the parent's deliberate presentation pass. Historical investigation and the
-pre-rework verification baseline below remain evidence, not current architecture.
+verification remain open. The combined development history is now preserved as
+`teal-assemblage-20261028`; [focused feature histories](/doc/upstreaming/splits.md)
+track the RadioCult series and AT Protocol reconstruction. Historical
+investigation and the pre-rework verification baseline below remain evidence,
+not current architecture or the focused branches' check results.
 
 This assessment preserves the starting history by revision: original base
 `577ed01d`, committed tip `c7901584`, working snapshot `0a26101b`. The original
