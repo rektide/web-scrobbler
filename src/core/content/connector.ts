@@ -1,6 +1,6 @@
 import * as MetadataFilter from '@web-scrobbler/metadata-filter';
 import browser from 'webextension-polyfill';
-import type { ArtistTrackInfo, State, TimeInfo } from '@/core/types';
+import type { ArtistTrackInfo, State, Station, TimeInfo } from '@/core/types';
 import * as Util from '@/core/content/util';
 import type { ConnectorMeta } from '../connectors';
 import type { DisallowedReason } from '../object/disallowed-reason';
@@ -316,6 +316,11 @@ export default class BaseConnector {
 	 * @returns Track info
 	 */
 	public getTrackInfo: () => State | null | undefined = () => null;
+
+	/**
+	 * Get the broadcast station that selected the current track.
+	 */
+	public getStation: () => Station | null | undefined = () => null;
 
 	/**
 	 * Returns a unique identifier of current track. The identifier does not
@@ -651,6 +656,7 @@ export default class BaseConnector {
 		trackArt: null,
 		isPodcast: false,
 		originUrl: null,
+		station: null,
 		scrobblingDisallowedReason: null,
 	};
 
@@ -915,6 +921,7 @@ export default class BaseConnector {
 				isPlaying: this.isPlaying(),
 				isPodcast: this.isPodcast(),
 				originUrl: this.getOriginUrl(),
+				station: this.getStation(),
 				scrobblingDisallowedReason: this.scrobblingDisallowedReason(),
 			};
 
