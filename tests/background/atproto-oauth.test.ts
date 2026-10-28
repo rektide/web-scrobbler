@@ -71,6 +71,15 @@ beforeEach(async () => {
 		vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = new Request(input, init);
 			const url = request.url;
+			if (url.startsWith('https://cloudflare-dns.com/dns-query')) {
+				return Response.json({
+					Status: 0,
+					Answer: [{ type: 16, data: `"did=${TEST_DID}"` }],
+				});
+			}
+			if (url === 'https://test.bsky.social/.well-known/atproto-did') {
+				return new Response(TEST_DID);
+			}
 			if (
 				decodeURIComponent(url) === `https://plc.directory/${TEST_DID}`
 			) {
@@ -130,6 +139,29 @@ beforeEach(async () => {
 });
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+});
+
+it('retains project-page subpaths in metadata, callback matching and credential namespaces', async () => {
+	vi.stubEnv('VITE_ATPROTO_OAUTH_ORIGIN', 'https://example.com/project///');
+	vi.resetModules();
+	const config = await import('@/core/scrobbler/atproto/oauth-config');
+	const store = await import('@/core/scrobbler/atproto/oauth-store');
+	expect(config.oauthClientId).toBe(
+		'https://example.com/project/oauth-client-metadata.json',
+	);
+	expect(config.oauthMessageOrigin).toBe('https://example.com');
+	expect(
+		config.isOAuthCallbackUrl(
+			'https://example.com/project/oauth/callback?code=x',
+		),
+	).toBe(true);
+	expect(
+		config.isOAuthCallbackUrl('https://example.com/oauth/callback'),
+	).toBe(false);
+	expect(store.OAUTH_STORAGE_PREFIX).toContain(
+		encodeURIComponent(config.oauthClientId),
+	);
 });
 
 async function begin(): Promise<string> {
@@ -179,6 +211,16 @@ describe('durable extension OAuth', () => {
 		expect(await auth.getOAuthAccount()).toEqual({ did: TEST_DID });
 	});
 
+	it('does not exchange a code when durable state consumption fails', async () => {
+		const search = await begin();
+		fake.remove.mockRejectedValueOnce(new Error('delete failed'));
+		await expect(auth.completeAtProtoAuthorization(search)).rejects.toThrow(
+			'delete failed',
+		);
+		expect(tokens).toHaveLength(0);
+		expect(await auth.getOAuthAccount()).toBeUndefined();
+	});
+
 	it('rejects unknown, expired, wrong-issuer and denied callbacks without token exchange', async () => {
 		await expect(
 			auth.completeAtProtoAuthorization(
@@ -207,6 +249,11 @@ describe('durable extension OAuth', () => {
 		await expect(auth.completeAtProtoAuthorization(wrong)).rejects.toThrow(
 			'unknown state',
 		);
+		const missingIssuer = new URLSearchParams(await begin());
+		missingIssuer.delete('iss');
+		await expect(
+			auth.completeAtProtoAuthorization(missingIssuer.toString()),
+		).rejects.toThrow('missing iss parameter');
 		const denied = (await begin()).replace(
 			'code=test-code',
 			'error=access_denied',

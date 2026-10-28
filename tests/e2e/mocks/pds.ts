@@ -18,6 +18,15 @@ export function resetCreateRecordCalls() {
 }
 
 export const pdsHandlers = [
+	http.get('https://cloudflare-dns.com/dns-query', () =>
+		HttpResponse.json({
+			Status: 0,
+			Answer: [{ type: 16, data: `"did=${TEST_DID}"` }],
+		}),
+	),
+	http.get('https://test.bsky.social/.well-known/atproto-did', () =>
+		HttpResponse.text(TEST_DID),
+	),
 	http.get(`${PDS_URL}/.well-known/oauth-authorization-server`, () =>
 		HttpResponse.json(testAuthorizationMetadata),
 	),

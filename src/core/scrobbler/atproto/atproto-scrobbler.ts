@@ -4,7 +4,15 @@ import type { SessionData } from '@/core/scrobbler/base-scrobbler';
 import BaseScrobbler from '@/core/scrobbler/base-scrobbler';
 import type { AtProtoLexiconConfig } from '@/core/storage/wrapper';
 import { AT_PROTO_LEXICONS as LEXICONS } from '@/core/storage/wrapper';
-import { createAtProtoClient, AtProtoClient } from './atcute-client';
+import {
+	createAtProtoClient,
+	AtProtoClient,
+	AtProtoRequestError,
+} from './atcute-client';
+import {
+	AuthMethodUnsatisfiableError,
+	TokenRefreshError,
+} from '@atcute/oauth-node-client';
 import { mapSongToRecord } from './field-mapping';
 import {
 	getOAuthAccount,
@@ -68,7 +76,17 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 		_currentlyPlaying: boolean,
 	): Promise<ServiceCallResult[]> {
 		void _currentlyPlaying;
-		const client = await this.getAtProtoClient();
+		let client: AtProtoClient | null;
+		try {
+			client = await this.getAtProtoClient();
+		} catch (error) {
+			return new Array<ServiceCallResult>(songs.length).fill(
+				error instanceof TokenRefreshError ||
+					error instanceof AuthMethodUnsatisfiableError
+					? ServiceCallResult.ERROR_AUTH
+					: ServiceCallResult.ERROR_OTHER,
+			);
+		}
 		if (!client) {
 			return new Array<ServiceCallResult>(songs.length).fill(
 				ServiceCallResult.ERROR_AUTH,
@@ -79,7 +97,7 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 
 		const results: ServiceCallResult[] = [];
 		for (const song of songs) {
-			let songOk = true;
+			let result = ServiceCallResult.RESULT_OK;
 			for (const lexicon of LEXICONS) {
 				if (
 					!(lexicon.id in enabledLexicons) ||
@@ -93,15 +111,16 @@ export default class AtProtoScrobbler extends BaseScrobbler<'AtProto'> {
 						lexicon.collection,
 						record as unknown as Record<string, unknown>,
 					);
-				} catch {
-					songOk = false;
+				} catch (error) {
+					result =
+						error instanceof TokenRefreshError ||
+						(error instanceof AtProtoRequestError &&
+							error.status === 401)
+							? ServiceCallResult.ERROR_AUTH
+							: ServiceCallResult.ERROR_OTHER;
 				}
 			}
-			results.push(
-				songOk
-					? ServiceCallResult.RESULT_OK
-					: ServiceCallResult.ERROR_OTHER,
-			);
+			results.push(result);
 		}
 
 		return results;

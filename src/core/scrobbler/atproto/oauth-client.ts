@@ -11,7 +11,6 @@ import type { Did } from '@atcute/lexicons';
 import { isActorIdentifier } from '@atcute/lexicons/syntax';
 import {
 	OAuthClient,
-	type PublicOAuthClientOptions,
 	type StoredSession,
 	type StoredState,
 } from '@atcute/oauth-node-client';
@@ -42,9 +41,7 @@ export async function requestOAuthLock<T>(
 	return await navigator.locks.request(`${OAUTH_STORAGE_PREFIX}${name}`, fn);
 }
 
-export function createOAuthClient(
-	overrides: Partial<PublicOAuthClientOptions> = {},
-): OAuthClient {
+export function createOAuthClient(): OAuthClient {
 	return new OAuthClient({
 		metadata: {
 			client_id: oauthClientId,
@@ -69,7 +66,6 @@ export function createOAuthClient(
 				},
 			}),
 		}),
-		...overrides,
 	});
 }
 

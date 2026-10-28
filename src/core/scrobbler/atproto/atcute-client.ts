@@ -1,6 +1,12 @@
 import type { OAuthSession } from '@atcute/oauth-node-client';
 import { requestOAuthLock } from './oauth-client';
 
+export class AtProtoRequestError extends Error {
+	constructor(public status: number) {
+		super(`createRecord failed: ${status}`);
+	}
+}
+
 export class AtProtoClient {
 	public agent: OAuthSession;
 	public readonly did: string;
@@ -26,9 +32,7 @@ export class AtProtoClient {
 			}),
 		);
 		if (!response.ok) {
-			throw new Error(
-				`createRecord failed: ${response.status} ${await response.text()}`,
-			);
+			throw new AtProtoRequestError(response.status);
 		}
 		return (await response.json()) as { uri: string; cid: string };
 	}
