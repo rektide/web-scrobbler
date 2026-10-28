@@ -9,7 +9,10 @@ export default defineConfig({
 			{ find: '#', replacement: '/tests' },
 			{
 				find: 'webextension-polyfill',
-				replacement: resolve(__dirname, 'tests/e2e/harness/browser-shim.ts'),
+				replacement: resolve(
+					__dirname,
+					'tests/e2e/harness/browser-shim.ts',
+				),
 			},
 		],
 	},
@@ -18,12 +21,13 @@ export default defineConfig({
 		VITE_CHROME: JSON.stringify('true'),
 		// Match the browser-shim sender.url mock (rektide.github.io).
 		'import.meta.env.VITE_ATPROTO_OAUTH_ORIGIN': JSON.stringify(
-			process.env.VITE_ATPROTO_OAUTH_ORIGIN ?? 'https://rektide.github.io',
+			process.env.VITE_ATPROTO_OAUTH_ORIGIN ??
+				'https://rektide.github.io',
 		),
 	},
 	plugins: [ConditionalCompile()],
 	build: {
-		outDir: resolve(__dirname, 'tests/e2e/harness/dist'),
+		outDir: resolve(__dirname, 'build/e2e-harness'),
 		emptyOutDir: true,
 		rollupOptions: {
 			input: resolve(__dirname, 'tests/e2e/harness/index.html'),
