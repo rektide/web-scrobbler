@@ -1,11 +1,15 @@
 ---
 type: Assessment
 title: AT Protocol and RadioCult upstream readiness
-description: Commit-shape review, recovered atcute WebExtension guidance, and verified OAuth blockers for upstreaming the extension.
+description: Commit-shape review, upstream refresh, historical OAuth failure evidence and the locally verified replacement's remaining rollout constraints.
 resource: /doc/upstreaming/README.md
 status: draft
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
+  - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
+    title: Implement and verify extension-owned OAuth and companion relay; update current readiness while preserving historical evidence
+  - resource: /doc/upstreaming/oauth.md
+    title: Current OAuth architecture, exact implementation revisions, checks and rollout limits
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
     title: Commission and integrate the upstream update and OAuth investigation; review commit boundaries, approve the test-dependency fix and verify production endpoint availability
   - resource: "opencode://ses_e7ba21be0ffeCZKevhCOYnzpbs"
@@ -19,28 +23,35 @@ sources:
   - resource: /doc/discovery/teal.md
     title: Existing integration discovery and historical OAuth design
   - resource: /src/core/scrobbler/atproto/atcute-client.ts
-    title: Browser OAuth agent construction and record requests
+    title: Restored library-owned OAuth session record requests after the local rework
   - resource: /src/core/scrobbler/atproto/atproto-scrobbler.ts
     title: Application-owned session storage and multi-collection writes
-  - resource: /src/core/scrobbler/atproto/localstorage-shim.ts
-    title: Synchronous in-memory storage with asynchronous persistence
+  - resource: /src/core/scrobbler/atproto/oauth-store.ts
+    title: Awaited durable storage replacing the historical synchronous shim preserved at assessment revision 738625f2
   - resource: "https://github.com/mary-ext/atcute/issues/86#issuecomment-5262426064"
     title: Mary explicitly recommends oauth-node-client for WebExtensions
   - resource: "https://github.com/mary-ext/atcute/blob/d5490616f3a5e1c90da119a6edd656561ad2f47c/packages/oauth/node-client/README.md#webextensions"
     title: Pinned atcute public-client and WebExtension setup
   - resource: "file:///home/rektide/src/web-scrobbler-github/src/routes/oauth/callback.tsx"
-    title: Companion website currently finalizes OAuth and relays a complete browser session
+    title: Companion callback-only relay after the coordinated local rework
 ---
 
 # AT Protocol and RadioCult upstream readiness
 
 ## Assessment
 
-The branch has useful feature work, but its existing history is a development
-stack rather than a ready-to-submit series. OAuth still uses
-`@atcute/oauth-browser-client`; the recommended node-client migration has not
-happened. A reproduced refresh failure and missing production OAuth endpoints
-need resolution before the AT Protocol integration is ready to land.
+The recommended OAuth replacement is now **implemented and verified locally**:
+the extension owns public `@atcute/oauth-node-client` 2.0.1 state, sessions,
+refresh and callback processing; the companion relays parameters only.
+See [the current OAuth account](/doc/upstreaming/oauth.md) for exact extension
+and companion commits, 2,189 passing unit tests, six source-built browser tests,
+packaged Chromium restart checks, and remaining limits.
+
+This is not deployed or accepted upstream. Missing production endpoints,
+coordinated website/extension rollout and live authorization/Firefox runtime
+verification remain open. The history is still a development stack requiring
+the parent's deliberate presentation pass. Historical investigation and the
+pre-rework verification baseline below remain evidence, not current architecture.
 
 This assessment preserves the starting history by revision: original base
 `577ed01d`, committed tip `c7901584`, working snapshot `0a26101b`. The original
@@ -232,7 +243,7 @@ node .test-agent/oauth-library/reproduce.mjs
 Assertions passed on Node v26.6.0. This establishes the library/store integration
 failure, not end-to-end browser authorization or service-worker restart behavior.
 
-## Recommended OAuth implementation boundary
+## Recommended OAuth implementation boundary (implemented locally)
 
 Follow the maintained WebExtension flow as one coherent extension/website change:
 
@@ -261,12 +272,13 @@ storage conversion. The browser session does not contain its issuing client ID.
 Cross-library grant restoration has not been tested; fresh authorization avoids
 requiring that compatibility bridge for the initial migration.
 
-An additional source-level accounts-UI concern belongs in that verification:
+An additional source-level accounts-UI concern was identified before the rework:
 `storeOAuthSession()` replaces the auth-started marker with the finished session,
 but the focus handler in [accounts.tsx](/src/ui/options/components/accounts.tsx)
 only refetches when `isReadyForGrantAccess()` finds that marker. Returning after
 the callback has already finished can therefore leave the displayed resource
-stale. This observation has not received a browser-level reproduction.
+stale. The replacement account UI no longer uses that gate; source-built tests
+now verify completion without a focus event or auth-started marker.
 
 ## Companion website dependency
 
@@ -277,10 +289,11 @@ URLs configured in [oauth-config.ts](/src/core/scrobbler/atproto/oauth-config.ts
 - `https://webscrobbler.com/oauth/connect`
 - `https://webscrobbler.com/oauth/callback`
 
-The existing companion checkout at `~/src/web-scrobbler-github` implements the
-browser-client flow at the development `rektide.github.io/web-scrobbler-pages`
-origin. Coordinate the production metadata/callback change with
-`web-scrobbler/web-scrobbler.github.io` as part of the migration.
+The companion checkout at `~/src/web-scrobbler-github` now implements the
+callback-only relay in local commit `96bd14c4`, retaining the development
+`rektide.github.io/web-scrobbler-pages` metadata/base. Coordinate the production
+metadata/callback deployment with `web-scrobbler/web-scrobbler.github.io` before
+distributing the paired extension; see the current account's rollout contract.
 
 ## Related upstream request
 
