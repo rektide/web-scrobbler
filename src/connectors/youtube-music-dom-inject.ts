@@ -1,5 +1,3 @@
-export {};
-
 /**
  * This script runs in non-isolated environment(youtube music itself)
  * for accessing navigator variables on Firefox
@@ -12,11 +10,9 @@ export {};
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	const sendData = () => {
 		window.postMessage(
 			{
@@ -32,23 +28,46 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 			'*',
 		);
 	};
-	const playPauseButton = document.getElementById('play-pause-button');
-	const SongInfo = document.querySelector('.content-info-wrapper');
-
 	const observer = new MutationObserver(sendData);
 
-	observer.observe(playPauseButton as Node, {
-		attributes: true,
-	});
+	// The play/pause button keeps its ID across UI redesigns; the
+	// redesigned player exposes track info as 'ytmusic-track-info'.
+	// Observe whichever player elements exist; send once both do.
+	// Returns whether all elements were found.
+	const tryAttach = () => {
+		const playPauseButton = document.getElementById('play-pause-button');
+		const songInfo = document.querySelector(
+			'.content-info-wrapper, ytmusic-track-info',
+		);
 
-	observer.observe(SongInfo as Node, {
-		attributes: true,
-		subtree: true,
-	});
+		if (playPauseButton !== null) {
+			observer.observe(playPauseButton, {
+				attributes: true,
+			});
+		}
+
+		if (songInfo !== null) {
+			observer.observe(songInfo, {
+				attributes: true,
+				subtree: true,
+			});
+		}
+
+		if (playPauseButton !== null && songInfo !== null) {
+			sendData();
+		}
+
+		return playPauseButton !== null && songInfo !== null;
+	};
+
+	// This script only runs on YouTube Music, so the player is expected
+	// eventually, but the redesigned player can render after page load.
+	const stopRetrying = retryUntil(tryAttach, 5000);
 
 	return () => {
 		// remove the subscribers added by this extension from the array.
 		// we dont have a confirmed reference to it so we have to check all of them.
 		observer.disconnect();
+		stopRetrying();
 	};
-})();
+});
