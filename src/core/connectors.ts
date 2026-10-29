@@ -2533,6 +2533,17 @@ export default <ConnectorMeta[]>[
 		usesBlocklist: true,
 	},
 	{
+		label: 'Amperwave',
+		matches: [
+			'*://player.amperwave.net/*',
+			'*://wrsi.com/*',
+			'*://www.wrsi.com/*',
+		],
+		js: 'amperwave.js',
+		id: 'amperwave',
+		usesBlocklist: true,
+	},
+	{
 		label: 'Spinitron',
 		matches: [
 			'*://spinitron.com/*',
@@ -2558,10 +2569,23 @@ export default <ConnectorMeta[]>[
 		allFrames: true,
 	},
 	{
+		label: 'WITR',
+		matches: ['*://witr.rit.edu/*'],
+		js: 'witr.js',
+		id: 'witr',
+	},
+	{
 		label: 'StreamOn.fm Webplayer',
 		matches: ['*://listen.streamon.fm/*'],
 		js: 'streamon.js',
 		id: 'streamon',
+		usesBlocklist: true,
+	},
+	{
+		label: 'WETA',
+		matches: ['*://weta.org/player*'],
+		js: 'weta.js',
+		id: 'weta',
 		usesBlocklist: true,
 	},
 ];
