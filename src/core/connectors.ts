@@ -2516,4 +2516,11 @@ export default <ConnectorMeta[]>[
 		allFrames: true,
 		usesBlocklist: true,
 	},
+	{
+		label: 'StreamGuys SGplayer',
+		matches: ['*://player.streamguys.com/*'],
+		js: 'streamguys.js',
+		id: 'streamguys',
+		allFrames: true,
+	},
 ];
