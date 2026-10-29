@@ -35,6 +35,10 @@ interface ContentCommunications {
 		payload: undefined;
 		response: number | undefined;
 	};
+	getTabUrl: {
+		payload: undefined;
+		response: string | null;
+	};
 	showNowPlaying: {
 		payload: {
 			song: CloneableSong;
