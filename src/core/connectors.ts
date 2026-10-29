@@ -243,6 +243,7 @@ export default <ConnectorMeta[]>[
 		matches: ['*://tunein.com/*'],
 		js: 'tunein.js',
 		id: 'tunein',
+		allFrames: true,
 	},
 	{
 		label: 'Mixcloud Embed',
