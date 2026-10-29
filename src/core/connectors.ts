@@ -2551,6 +2551,12 @@ export default <ConnectorMeta[]>[
 		allFrames: true,
 	},
 	{
+		label: 'WITR',
+		matches: ['*://witr.rit.edu/*'],
+		js: 'witr.js',
+		id: 'witr',
+	},
+	{
 		label: 'StreamOn.fm Webplayer',
 		matches: ['*://listen.streamon.fm/*'],
 		js: 'streamon.js',
