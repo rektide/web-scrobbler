@@ -2557,4 +2557,11 @@ export default <ConnectorMeta[]>[
 		id: 'streamon',
 		usesBlocklist: true,
 	},
+	{
+		label: 'WETA',
+		matches: ['*://weta.org/player*'],
+		js: 'weta.js',
+		id: 'weta',
+		usesBlocklist: true,
+	},
 ];
