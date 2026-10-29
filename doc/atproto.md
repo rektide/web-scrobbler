@@ -23,8 +23,9 @@ Accounts accepts an AT Protocol handle or DID. Both **teal.fm**
 default; their checkboxes independently select writes to the account's PDS.
 Now-playing and loving tracks are not implemented for this service.
 
-Teal records include the listening page and music-service origin. Rocksky
-durations are milliseconds; absent title, artist and album fields use `Unknown`.
+Teal records include the listening page, music-service origin and optional
+generic station metadata supplied by a connector. Rocksky durations are
+milliseconds; absent title, artist and album fields use `Unknown`.
 
 ## OAuth ownership and hosted callback
 

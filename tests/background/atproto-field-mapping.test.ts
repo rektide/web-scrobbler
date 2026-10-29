@@ -13,7 +13,16 @@ const connector = {
 	id: 'example',
 };
 
-test('maps Teal listening source', () => {
+test('maps Teal listening source and optional generic station metadata', () => {
+	const station = {
+		uri: 'https://radio.example/',
+		label: 'Example Radio',
+		frequencyHz: 95_500_000,
+		band: 'FM',
+		identifiers: [
+			{ authorityUri: 'https://directory.example/', value: '42' },
+		],
+	};
 	const song = new Song(
 		{
 			track: 'Test Track',
@@ -21,6 +30,7 @@ test('maps Teal listening source', () => {
 			album: 'Test Album',
 			duration: 120,
 			originUrl: 'https://radio.example/player',
+			station,
 		},
 		connector,
 	);
@@ -34,6 +44,7 @@ test('maps Teal listening source', () => {
 		playedTime: '2023-11-14T22:13:20.000Z',
 		originUri: 'https://radio.example/player',
 		musicServiceUri: 'https://radio.example/',
+		station,
 	});
 });
 
