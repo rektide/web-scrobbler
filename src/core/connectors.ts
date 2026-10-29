@@ -2503,4 +2503,17 @@ export default <ConnectorMeta[]>[
 		js: 'soundscout.js',
 		id: 'soundscout',
 	},
+	{
+		label: 'RadioCult',
+		matches: [
+			'https://app.radiocult.fm/embed/dock/*',
+			'https://app.radiocult.fm/embed/player/*',
+			'https://app.radiocult.fm/embed/popout/*',
+			'https://app.radiocult.fm/embed/square-player/*',
+		],
+		js: 'radiocult.js',
+		id: 'radiocult',
+		allFrames: true,
+		usesBlocklist: true,
+	},
 ];
