@@ -31,12 +31,11 @@ interface Window {
 	appMediaPlaybackController: MediaController;
 }
 
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	const W = window as unknown as Window;
+	let attached = false;
 
 	function extractAttributes(attributes: Attribute[]) {
 		const data: { [key: string]: string | undefined } = {};
@@ -78,17 +77,21 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 		}
 	}
 
-	const observer = new MutationObserver(() => {
-		if ('appMediaPlaybackController' in W) {
-			observer.disconnect();
-			toggleEventListeners('add');
+	// Wait for the page's media playback controller to appear.
+	const stopRetrying = retryUntil(() => {
+		if (!('appMediaPlaybackController' in W)) {
+			return false;
 		}
-	});
 
-	observer.observe(document.body, { childList: true });
+		toggleEventListeners('add');
+		attached = true;
+		return true;
+	}, 1000);
 
 	return () => {
-		observer.disconnect();
-		toggleEventListeners('remove');
+		stopRetrying();
+		if (attached) {
+			toggleEventListeners('remove');
+		}
 	};
-})();
+});

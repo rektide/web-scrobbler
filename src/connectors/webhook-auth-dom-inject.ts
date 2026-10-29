@@ -1,3 +1,5 @@
+import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+
 enum State {
 	Waiting = 'WAITING',
 	Rejected = 'REJECTED',
@@ -5,13 +7,19 @@ enum State {
 	Confirmed = 'CONFIRMED',
 }
 
-declare interface Window {
-	wsState: () => State;
-	setWSState: (newState: State) => void;
+declare global {
+	interface Window {
+		wsState: () => State;
+		setWSState: (newState: State) => void;
+	}
 }
 
-setInterval(() => {
-	if ((window as Window).wsState() === State.Accepted) {
+runWithCleanup(() => {
+	const stopRetrying = retryUntil(() => {
+		if (window.wsState() !== State.Accepted) {
+			return false;
+		}
+
 		const search = new URLSearchParams(window.location.search);
 		window.postMessage(
 			{
@@ -22,6 +30,11 @@ setInterval(() => {
 			},
 			'*',
 		);
-		(window as Window).setWSState(State.Confirmed);
-	}
-}, 1000);
+		window.setWSState(State.Confirmed);
+		return true;
+	}, 1000);
+
+	return () => {
+		stopRetrying();
+	};
+});
