@@ -2518,6 +2518,14 @@ export default <ConnectorMeta[]>[
 		usesBlocklist: true,
 	},
 	{
+		label: 'AirKast',
+		matches: ['*://api.airkast.net/playlist/*'],
+		js: 'airkast.js',
+		id: 'airkast',
+		allFrames: true,
+		usesBlocklist: true,
+	},
+	{
 		label: 'Spinitron',
 		matches: [
 			'*://spinitron.com/*',
