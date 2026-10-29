@@ -3,7 +3,8 @@ import type { Station } from '@/core/types';
 const SPINITRON_URI = 'https://spinitron.com/';
 
 function getStationSlug() {
-	const { host, pathname, searchParams } = window.location;
+	const { host, pathname } = window.location;
+	const searchParams = new URLSearchParams(window.location.search);
 	if (host === 'widgets.spinitron.com') {
 		return searchParams.get('station')?.toUpperCase() ?? null;
 	}
