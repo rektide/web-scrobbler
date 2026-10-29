@@ -7,7 +7,7 @@ status: locally-verified
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
   - resource: "opencode://ses_e76b14bfcffeBWpTR6f6Qu87ed"
-    title: Human confirms station capture as the upstreamable core; session audits upstream novelty and reworks the split into per-line radiocult-ident and atproto-ident series
+    title: Human confirms station capture as the upstreamable core; session audits upstream novelty, reworks the split into per-line ident series, and relates the transport to upstream issue #1882 and draft PR #4434
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
     title: Human commissions OAuth-first rework and independent Sol-built split histories; parent reviews boundaries, preserves the complete assemblage and assigns bookmarks
   - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
@@ -129,6 +129,35 @@ other's feature code.
 Because both PRs carry the same transport patch, whichever lands first
 accepts it upstream; the other series is then rebased onto that accepted
 base and its `-ident` commit drops out.
+
+### Relation to upstream issue #1882 and draft PR #4434
+
+Upstream [issue #1882](https://github.com/web-scrobbler/web-scrobbler/issues/1882)
+(open since 2019, labeled core/feature) asks for service detection beyond
+URL patterns — motivated by self-hosted platforms such as Funkwhale and
+any-domain embeds such as Bandcamp custom domains (#3125). Draft
+[PR #4434](https://github.com/web-scrobbler/web-scrobbler/pull/4434)
+answers at the detection layer: declarative DOM rules
+(`meta[name=generator]`) in a new `connectors-dynamic.ts`, URL matching
+tried first with DOM-rule fallback, and an inverted injection flow where
+the content script decides its own connector and the background asks
+tabs which connector bound. None of it has landed; master's current
+answer for self-hosted platforms is manual custom URL patterns — the
+Funkwhale and AzuraCast entries ship with no built-in matches.
+
+The station transport is the payload-layer counterpart rather than an
+answer to #1882: detection decides *which connector* runs; the transport
+lets that connector say *which station* selected the track. The two
+compose — a DOM-detected AzuraCast instance could still supply `Station`
+data, and `ExternalIdentifier.authorityUri` gives a detected service
+identity a data home. #4434 modifies `content/main.ts`,
+`controller.ts` and `communication.ts`, which this series also touches;
+the overlap is textual and mechanically resolvable, with no conceptual
+collision. Notably, #4434's `getConnector` (background asks the tab its
+connector) mirrors this series' `getTabUrl` (framed connector asks the
+background its top-level page) — the same boundary-identity concern in
+opposite directions. Upstream PRs from these series should cite #1882
+as related work without claiming it.
 
 ## RadioCult series
 
