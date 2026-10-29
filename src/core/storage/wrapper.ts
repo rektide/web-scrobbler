@@ -69,6 +69,19 @@ export type ArrayProperty = {
 
 export type ArrayProperties = ArrayProperty[];
 
+export type AtProtoLexiconId = 'teal' | 'rocksky';
+
+export const AT_PROTO_LEXICONS: {
+	id: AtProtoLexiconId;
+	label: string;
+	collection: string;
+}[] = [
+	{ id: 'teal', label: 'teal.fm', collection: 'fm.teal.feed.play' },
+	{ id: 'rocksky', label: 'Rocksky', collection: 'app.rocksky.scrobble' },
+];
+
+export type AtProtoLexiconConfig = Record<AtProtoLexiconId, boolean>;
+
 export interface ScrobblerModels {
 	LastFM?: { token?: string } | { sessionID?: string; sessionName?: string };
 	LibreFM?: { token?: string } | { sessionID?: string; sessionName?: string };
