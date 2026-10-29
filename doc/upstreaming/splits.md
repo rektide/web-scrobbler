@@ -7,7 +7,11 @@ status: locally-verified
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
   - resource: "opencode://ses_e76b14bfcffeBWpTR6f6Qu87ed"
-    title: Human confirms station capture as the upstreamable core; session audits upstream novelty, reworks the split into per-line ident series, and relates the transport to upstream issue #1882 and draft PR #4434
+    title: Human confirms station capture as the upstreamable core; session audits novelty, inverts into standalone features with ident stacks, relates the transport to upstream issue #1882 and draft PR #4434, and pushes the set
+  - resource: "opencode://ses_e76975a22ffem1n0BbzYE4n6dC"
+    title: Sol high inverts the RadioCult series so the connector ships without station content and radiocult-ident stacks above
+  - resource: "opencode://ses_e76975931ffeWuZ1P5GHKBNHNS"
+    title: Separate Sol high strips station consumption from the AT Protocol series and stacks atproto-ident above
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
     title: Human commissions OAuth-first rework and independent Sol-built split histories; parent reviews boundaries, preserves the complete assemblage and assigns bookmarks
   - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
@@ -39,16 +43,20 @@ sources:
 | Purpose | Workspace | Bookmark / revision |
 | --- | --- | --- |
 | Preserved combined implementation and local artifacts | `/home/rektide/src/web-scrobbler-teal` | `teal-assemblage-20261028` → `81942226` |
-| RadioCult identity transport base | shared repository | `radiocult-ident` → `0480b542` |
-| RadioCult submission series | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `e4119fea` |
-| AT Protocol identity transport base | shared repository | `atproto-ident` → `5872c6e4` |
-| AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `079d85f7` |
+| Station identity transport alone | shared repository | `ident` → `0480b542` |
+| RadioCult submission series (no station content) | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `60b5fc0d` |
+| RadioCult station identity stack | same workspace, above `radiocult` | `radiocult-ident` → `1e775c81` |
+| AT Protocol submission series (no station content) | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `e3cb58e6` |
+| AT Protocol station identity stack | same workspace, above `atproto` | `atproto-ident` → `03a4f350` |
 
-The `-ident` bookmarks are per-line copies of the same station-identity
-transport patch, so each submission series is fully independent: neither
-history contains the other's commits, and each is self-contained for a
-single upstream PR. Both copies descend directly from upstream
-`48a84b9f1b2327af3abef8678e1d0691460e589e`.
+The dependency direction was inverted on 2026-10-29 so each feature ships
+without the station work: `radiocult` and `atproto` contain zero
+station-identity content and descend directly from upstream
+`48a84b9f1b2327af3abef8678e1d0691460e589e`; each `-ident` bookmark is a
+stack ON TOP of its feature, opening with an exact copy of the `ident`
+transport patch and then that feature's station-specific commits. `ident`
+itself stands alone on upstream and is shippable as a single capability
+PR with no feature attached.
 
 The feature workspaces share the same JJ repository. Their working directories
 and npm installations are separate. The parent retains the historical assemblage
@@ -59,11 +67,11 @@ Both feature workspaces have clean, empty working-copy children of their
 completed tips. The parent verified the bookmark targets, shared fork point,
 workspace identities and absence of the other feature's source code. The old
 local `atproto` name was moved sideways only after review; its former development
-history remains in the dated assemblage. The fork's remote branches were
-later pushed once and now hold the pre-rework revisions; the local
-`radiocult` and `atproto` bookmarks have since been rebased onto their
-per-line `-ident` copies and will diverge from those remotes until a push
-is deliberately chosen.
+history remains in the dated assemblage. The fork (`rektide/web-scrobbler`) received the inverted bookmark set on
+2026-10-29 — `ident`, `radiocult`, `radiocult-ident`, `atproto`,
+`atproto-ident` and this documentation line — force-updating the stale
+pre-rework `radiocult` and `atproto` branches. No upstream pull request
+has been opened from any of them.
 
 ## Preserved assemblage
 
@@ -92,17 +100,15 @@ The paired website change remains commit
 
 ## Station identity transport and feature boundaries
 
-Each focused history uses upstream
-`48a84b9f1b2327af3abef8678e1d0691460e589e` plus its **own copy** of the
-station-identity transport commit, named by the per-line bookmark:
-
-**`radiocult-ident` → `0480b54237feaaad63064f4b400f5ed46a8369bc` and
-`atproto-ident` → `5872c6e44c32d9d817a8a20c5a5635d4fc43aef4` —
-`feat: transport optional station metadata with songs`.**
-
-The two copies carry an identical patch (jj `duplicate` of the reviewed
-`0eb87a1c`, then each feature line rebased onto its own copy; tree
-comparison against the former tips showed zero differences). This layer is
+The transport layer now exists in three places with one identical patch:
+the standalone **`ident`** bookmark
+(`0480b54237feaaad63064f4b400f5ed46a8369bc`) directly on upstream
+`48a84b9f1b2327af3abef8678e1d0691460e589e`, and the opening commit of
+each `-ident` stack (`feb96fa6eff1` above `radiocult`, `25a3a5b7fa6f`
+above `atproto`) — all `feat: transport optional station metadata with
+songs`, each a jj `duplicate` of the reviewed `0eb87a1c` whose diff is
+byte-identical to the standalone copy. Tree comparison against each
+former series tip showed zero differences. This layer is
 a deliverable in its own right, not merely a prerequisite. It gives
 connectors a generic way to say which broadcast station selected the
 playing track — `Station` / `ExternalIdentifier` types, optional station
@@ -119,16 +125,18 @@ name, and `originUrl` describes a track's origin, not the selecting
 station; `isPodcast` is the nearest precedent for adding a song attribute
 to `State`.
 
-RadioCult owns its player connector, public station enrichment, top-level
-listening-page URL plumbing and station-name preference; it is the worked
-example consuming the transport. AT Protocol owns Teal/Rocksky mapping,
-OAuth, account UI and PDS writes, including consumption of optional
-generic station data. The two series share no commits; neither needs the
-other's feature code.
+RadioCult owns its player connector; its stack adds public station
+enrichment, top-level listening-page URL plumbing and station-name
+preference as the worked example consuming the transport. AT Protocol owns
+Teal/Rocksky mapping, OAuth, account UI and PDS writes; its stack adds the
+optional station consumption in play records. The standalone features
+share no commits and reference no station code; the only thing the three
+transport copies share is the identical patch.
 
-Because both PRs carry the same transport patch, whichever lands first
-accepts it upstream; the other series is then rebased onto that accepted
-base and its `-ident` commit drops out.
+Each PR can therefore carry exactly what it needs: the features land
+alone, `ident` can land alone, and a `-ident` stack can land as one
+combined feature-plus-capability PR. Whichever transport copy lands first
+accepts the patch upstream; the others drop out on rebase.
 
 ### Relation to upstream issue #1882 and draft PR #4434
 
@@ -163,9 +171,10 @@ as related work without claiming it.
 
 | Layer | Commit | Purpose |
 | --- | --- | --- |
-| Identity transport (`radiocult-ident`) | `0480b54237feaaad63064f4b400f5ed46a8369bc` | Optional station data and transport tests |
-| Connector | `e7fc4740bc1e973683f0cdadc8b88c084cf269ce` | Four player variants, station parsing/enrichment, frame listening-origin support and connector tests |
-| Preference | `e4119fea9c24cacbfbf3a7a978ab545e69afe55a` | Configurable station trademark filtering, native UI/localization and option regression tests |
+| Embed player connector (`radiocult`) | `60b5fc0dd8db743ce4f6cc32aa1fc3643d5938ed` | Four player variants and track/artist reading; zero station content |
+| Transport copy | `feb96fa6eff15be443a60eec385401fa91ee469a` | Exact copy of the `ident` patch |
+| Station enrichment | `cb882da270f7b36b9276e5da3f8601c4fde0b21b` | `station.ts` parsing/enrichment, listening-origin plumbing and station tests |
+| Preference (`radiocult-ident`) | `1e775c81781bfc824ade09ad4929a51bdb6c34d2` | Configurable station trademark filtering, native UI/localization and option regression tests |
 
 Sol high reconstructed these layers from immutable assemblage revision
 `738625f249fdab3b4cfdfd6202ae42d0c1fb0757`. The series retains blocklisting,
@@ -197,25 +206,40 @@ live playback and Safari compilation were not exercised. Parent review checked
 the production boundaries and test intent without redundantly rerunning the
 agent's successful checks.
 
+### RadioCult inversion verification
+
+A Sol high rebuilt the series on 2026-10-29 (session source below) so the
+connector ships without station content, with the station work stacked
+above it. Per-layer types and tests passed (5, then 8, then 24 tests;
+final full suite **2,197**, all five linters, Chrome build). The final
+tree is identical to the pre-inversion tip `e4119fea` (empty diff), and
+the stack's transport copy is byte-identical to `ident`. One typecheck
+correction — the conventional `export {}` marker after import removal —
+was made at the connector layer before committing. Receipts:
+[file:///home/rektide/src/web-scrobbler-radiocult/.test-agent/radiocult-invert/README.md](file:///home/rektide/src/web-scrobbler-radiocult/.test-agent/radiocult-invert/README.md).
+
 ## AT Protocol series
 
 Completed by a separate Sol high after the OAuth rewrite and assemblage
 checkpoint. Its archived feature source is `81942226`, with extraction reads
-bound to the identical production-code tip `d4e39777`; the exact common base
-was `0eb87a1c`, now the line's own `atproto-ident` copy
-`5872c6e44c32d9d817a8a20c5a5635d4fc43aef4`.
+bound to the identical production-code tip `d4e39777`; the original common
+base `0eb87a1c` was later inverted into the stack's transport copy
+`25a3a5b7fa6f2ba3d522687f5d91e4b25550d4ca`.
 
-| Layer after the identity transport | Commit | Purpose |
+| Layer | Commit | Purpose |
 | --- | --- | --- |
-| Records | `7a93bb1fd495bf2ad9777cb547f1844265c0a6a5` | Stable Teal/Rocksky mapping, destination vocabulary and mapping tests |
-| Complete feature | `5f83b796aa09b7293fcc840c1d8eb0ad3c786405` | Durable extension-owned OAuth, scrobbler, account UI, localized labels, callback boundaries and native unit coverage |
-| Browser verification | `079d85f7bc4443350ed4eeba6db7117ef61989c7` | Source-built Chromium harness, native network routing, six browser cases and contributor guide |
+| Records mapping | `d11ef1afd7512f44a5d5cb429ef0b37809f0965e` | Stable Teal/Rocksky mapping, destination vocabulary and mapping tests, without station consumption |
+| Complete feature | `049087211815b14510cb00b534cf103b366911d2` | Durable extension-owned OAuth, scrobbler, account UI, localized labels, callback boundaries and native unit coverage |
+| Browser verification (`atproto`) | `e3cb58e67457292862f947b37892a40132910d21` | Source-built Chromium harness, native network routing, six browser cases and contributor guide |
+| Transport copy | `25a3a5b7fa6f2ba3d522687f5d91e4b25550d4ca` | Exact copy of the `ident` patch |
+| Station consumption (`atproto-ident`) | `03a4f350cba6226d58aeb3591353b6b1db5b7e31` | Optional station metadata in play records, mapping tests and the guide's station sentence |
 
 The production AT Protocol modules, content callback relay and account component
 are byte-for-byte equal to the reviewed OAuth result. Parent comparison verified
 that boundary directly. RadioCult connector/options/localization and its
-`getTabUrl` / `topLevelUrl` plumbing are absent. Generic station consumption is
-retained through the common prerequisite; tests use neutral station fixtures.
+`getTabUrl` / `topLevelUrl` plumbing are absent. Generic station
+consumption lives only in the `atproto-ident` stack; the standalone
+series' tests use no station fixtures.
 
 The split replaces MSW and its adapter with Playwright's native request routing.
 All six substantive browser cases remain, record captures are isolated per test,
@@ -251,10 +275,25 @@ focused series. Parent review checked production equality, the replacement
 network fixture, record/error tests, native dependency changes and the contributor
 contract. It did not redundantly rerun the successful agent checks.
 
+### AT Protocol inversion verification
+
+A separate Sol high rebuilt the series on 2026-10-29 (session source
+below) with station consumption stripped from all three feature commits
+and restored as the stack's final commit. The agent enumerated 95
+station-matching lines on the line: 48 upstream (untouched), 38 transport
+(deferred to the copy), 9 mapping/test (stripped then restored), 0
+feature/browser. Per-layer types and tests passed (4, 25, 25 unit plus
+six Chromium, 28; final full suite **2,189 unit tests**, all five
+linters, six Chromium tests). The final tree is identical to the
+pre-inversion tip `079d85f7` (empty diff), and the `atproto` tree
+contains zero station-identity references. Receipts:
+[file:///home/rektide/src/web-scrobbler-atproto/.test-agent/atproto-invert/README.md](file:///home/rektide/src/web-scrobbler-atproto/.test-agent/atproto-invert/README.md).
+
 ## Rollout boundary
 
 The [OAuth implementation account](/doc/upstreaming/oauth.md#browser-and-rollout-contract)
 and [companion contract](file:///home/rektide/src/web-scrobbler-github/doc/oauth.md#coordinated-rollout)
 remain prerequisites for an AT Protocol release. Production metadata/callback
 hosting and real authorization are not established by a successful local build.
-Bookmarks are local delivery references; no feature push or PR has been made.
+The bookmarks are pushed to the operator's fork as delivery references; no
+upstream PR has been made.
