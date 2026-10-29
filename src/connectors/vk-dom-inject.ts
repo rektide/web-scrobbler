@@ -10,12 +10,9 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	const INFO_ID = 0;
 	const INFO_OWNER_ID = 1;
 	const INFO_TRACK = 3;
@@ -136,4 +133,4 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 				!(e.et && typeof e.et === 'string' && e.cb === listeners[e.et]),
 		);
 	};
-})();
+});

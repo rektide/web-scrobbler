@@ -10,12 +10,9 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	interface Window {
 		// replaceId seems to be the only instance of trackId that is actually updating properly.
 		// other vars like curTrackId, intTrackId, arrDataCurrentTrack seem to not consistently update when starting new tracks.
@@ -74,4 +71,4 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 	return () => {
 		window.removeEventListener('message', listenForUpdates);
 	};
-})();
+});

@@ -10,12 +10,9 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	interface Player {
 		addEventListener: (
 			_: string,
@@ -310,4 +307,4 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 			onYoutubeSongStateChange,
 		);
 	};
-})();
+});
