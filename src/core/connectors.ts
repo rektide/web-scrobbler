@@ -2563,7 +2563,7 @@ export default <ConnectorMeta[]>[
 	},
 	{
 		label: 'StreamGuys SGplayer',
-		matches: ['*://player.streamguys.com/*'],
+		matches: ['*://player.streamguys.com/*', '*://xpn.org/*'],
 		js: 'streamguys.js',
 		id: 'streamguys',
 		allFrames: true,

@@ -2,6 +2,24 @@ import type { Station } from '@/core/types';
 
 const SGPLAYER_URI = 'https://player.streamguys.com/';
 
+/**
+ * Stations running self-hosted SGplayer deployments under their own
+ * hostnames, keyed by hostname. The hosted player encodes the station
+ * in the first path segment; on a self-hosted deployment that segment
+ * is a site path, so the station is the site itself.
+ */
+const SELF_HOSTED_STATIONS: Record<string, Station> = {
+	'xpn.org': {
+		uri: 'https://xpn.org/',
+		label: 'WXPN',
+		callSign: 'WXPN',
+	},
+};
+
+const getSelfHostedStation = () => {
+	return SELF_HOSTED_STATIONS[window.location.hostname] ?? null;
+};
+
 const getStationSlug = () => {
 	const stationSlug = window.location.pathname.match(/^\/([^/]+)/)?.[1];
 
@@ -9,6 +27,12 @@ const getStationSlug = () => {
 };
 
 const getStationLabel = () => {
+	const selfHostedStation = getSelfHostedStation();
+
+	if (selfHostedStation) {
+		return selfHostedStation.label;
+	}
+
 	const stationSlug = getStationSlug();
 	const pageTitle = document.title.replace(/\s*SGPlayer$/, '').trim();
 
@@ -16,6 +40,12 @@ const getStationLabel = () => {
 };
 
 const getStation = () => {
+	const selfHostedStation = getSelfHostedStation();
+
+	if (selfHostedStation) {
+		return selfHostedStation;
+	}
+
 	const stationSlug = getStationSlug();
 
 	if (!stationSlug) {
@@ -40,7 +70,11 @@ const getStation = () => {
 	return station;
 };
 
-Connector.playerSelector = '.sg-content';
+/**
+ * `.sgplayer` covers self-hosted deployments (e.g. WXPN) that wrap
+ * SGplayer without the hosted `.sg-content` container.
+ */
+Connector.playerSelector = ['.sg-content', '.sgplayer'];
 
 /**
  * Ordered selector lists cover the standard and bar layouts of
@@ -81,10 +115,25 @@ Connector.isPlaying = () => {
 
 	const playStateIcon = document.querySelector('#playPauseButton span');
 
-	return playStateIcon?.classList.contains('fa-pause') ?? null;
+	if (playStateIcon) {
+		return playStateIcon.classList.contains('fa-pause');
+	}
+
+	// Self-hosted deployments (e.g. WXPN) expose playback state through
+	// the play control's title attribute instead.
+	const playControl = document.querySelector('.sg-control-play a');
+
+	if (playControl) {
+		return playControl.getAttribute('title') === 'Pause';
+	}
+
+	return null;
 };
 
-Connector.getChannelId = getStationSlug;
+Connector.getChannelId = () => {
+	// Self-hosted deployments have no hosted station slug to derive.
+	return getSelfHostedStation() ? null : getStationSlug();
+};
 
 Connector.getStation = getStation;
 
