@@ -2526,6 +2526,17 @@ export default <ConnectorMeta[]>[
 		usesBlocklist: true,
 	},
 	{
+		label: 'Amperwave',
+		matches: [
+			'*://player.amperwave.net/*',
+			'*://wrsi.com/*',
+			'*://www.wrsi.com/*',
+		],
+		js: 'amperwave.js',
+		id: 'amperwave',
+		usesBlocklist: true,
+	},
+	{
 		label: 'Spinitron',
 		matches: [
 			'*://spinitron.com/*',
