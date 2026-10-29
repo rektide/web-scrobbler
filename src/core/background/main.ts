@@ -47,6 +47,16 @@ import {
 	toggleLove,
 } from './scrobble';
 import scrobbleService from '../object/scrobble-service';
+import AtProtoScrobbler from '@/core/scrobbler/atproto/atproto-scrobbler';
+import {
+	authorizeAtProto,
+	completeAtProtoAuthorization,
+} from '@/core/scrobbler/atproto/oauth-client';
+import {
+	isOAuthCallbackSearch,
+	isOAuthCallbackSender,
+	isOAuthOptionsSender,
+} from '@/core/scrobbler/atproto/oauth-messages';
 import { fetchListenBrainzProfile } from '@/util/util';
 
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
@@ -528,6 +538,59 @@ setupBackgroundListeners(
 			}
 
 			return (await browser.tabs.get(tabId)).audible ?? true;
+		},
+	}),
+
+	backgroundListener({
+		type: 'atprotoOAuthCallback',
+		fn: async (payload, sender) => {
+			if (
+				!isOAuthCallbackSender(sender) ||
+				!isOAuthCallbackSearch(payload?.search)
+			) {
+				return { ok: false };
+			}
+			try {
+				await completeAtProtoAuthorization(payload.search);
+				return { ok: true };
+			} catch {
+				// Never log the callback, tokens or server-supplied error descriptions.
+				return { ok: false };
+			}
+		},
+	}),
+	backgroundListener({
+		type: 'atprotoAuthorize',
+		fn: async (payload, sender) => {
+			if (
+				!isOAuthOptionsSender(sender) ||
+				typeof payload?.identifier !== 'string'
+			) {
+				return { ok: false };
+			}
+			try {
+				await authorizeAtProto(payload.identifier);
+				return { ok: true };
+			} catch {
+				return { ok: false };
+			}
+		},
+	}),
+	backgroundListener({
+		type: 'atprotoSignOut',
+		fn: async (_, sender) => {
+			if (!isOAuthOptionsSender(sender)) {
+				return { ok: false };
+			}
+			try {
+				const scrobbler = scrobbleService.getScrobblerByLabel(
+					'AtProto',
+				) as AtProtoScrobbler;
+				await scrobbler.clearAuthorization();
+				return { ok: true };
+			} catch {
+				return { ok: false };
+			}
 		},
 	}),
 );

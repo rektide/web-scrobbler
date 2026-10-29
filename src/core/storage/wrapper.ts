@@ -82,6 +82,15 @@ export const AT_PROTO_LEXICONS: {
 
 export type AtProtoLexiconConfig = Record<AtProtoLexiconId, boolean>;
 
+export interface AtProtoModel {
+	/** Legacy browser-client fields are preserved but never restored. */
+	isAuthStarted?: boolean;
+	sessionID?: string;
+	sessionName?: string;
+	oauthSession?: unknown;
+	lexicons?: AtProtoLexiconConfig;
+}
+
 export interface ScrobblerModels {
 	LastFM?: { token?: string } | { sessionID?: string; sessionName?: string };
 	LibreFM?: { token?: string } | { sessionID?: string; sessionName?: string };
@@ -89,6 +98,7 @@ export interface ScrobblerModels {
 	Maloja?: Properties;
 	Webhook?: WebhookModel;
 	Pleroma?: Properties;
+	AtProto?: AtProtoModel;
 }
 
 export interface ManagerTab {

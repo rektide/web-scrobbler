@@ -25,6 +25,14 @@ const common: UserConfig = {
 			{ find: '#', replacement: '/tests' },
 		],
 	},
+	define: {
+		// AT Protocol OAuth host. Override with VITE_ATPROTO_OAUTH_ORIGIN at
+		// build time (e.g. https://rektide.github.io for dev); defaults to the
+		// production host. See src/core/scrobbler/atproto/oauth-config.ts.
+		'import.meta.env.VITE_ATPROTO_OAUTH_ORIGIN': JSON.stringify(
+			process.env.VITE_ATPROTO_OAUTH_ORIGIN ?? 'https://webscrobbler.com',
+		),
+	},
 };
 
 function distRoot() {

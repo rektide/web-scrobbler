@@ -122,6 +122,18 @@ interface ContentCommunications {
 		payload: undefined;
 		response: boolean;
 	};
+	atprotoOAuthCallback: {
+		payload: { search: string };
+		response: { ok: boolean };
+	};
+	atprotoAuthorize: {
+		payload: { identifier: string };
+		response: { ok: boolean };
+	};
+	atprotoSignOut: {
+		payload: undefined;
+		response: { ok: boolean };
+	};
 }
 
 interface BackgroundCommunications {

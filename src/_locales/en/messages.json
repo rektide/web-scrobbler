@@ -1,4 +1,32 @@
 {
+    "accountsAtProtoHandle": {
+        "message": "AT Protocol handle or DID",
+        "description": "Label for AT Protocol sign-in identifier"
+    },
+    "accountsAtProtoReauthorize": {
+        "message": "Your previous AT Protocol session needs a new authorization. Your scrobbling preferences have been preserved.",
+        "description": "Shown for sessions from the old website-owned OAuth flow"
+    },
+    "accountsAtProtoWaiting": {
+        "message": "Complete authorization in the new tab. If it fails or expires, sign in again.",
+        "description": "Status after opening AT Protocol authorization"
+    },
+    "accountsAtProtoAuthError": {
+        "message": "Could not authorize AT Protocol. Check your handle and connection, then sign in again.",
+        "description": "Safe generic OAuth failure message"
+    },
+    "accountsAtProtoSignOutError": {
+        "message": "Could not save your signout. Please try again.",
+        "description": "AT Protocol durable signout failure"
+    },
+    "accountsAtProtoPermissions": {
+        "message": "Use the permission button above to allow access to all sites before signing in. AT Protocol accounts may use any HTTPS server.",
+        "description": "Explains the existing optional host permission needed by AT Protocol OAuth"
+    },
+    "accountsAtProtoScrobbleTo": {
+        "message": "Scrobble to:",
+        "description": "Heading for enabled AT Protocol record types"
+    },
     "extDescription": {
         "message": "Scrobble music all around the web!",
         "description": "Description of the extension"
