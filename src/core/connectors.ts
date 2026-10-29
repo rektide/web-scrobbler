@@ -2537,10 +2537,24 @@ export default <ConnectorMeta[]>[
 		usesBlocklist: true,
 	},
 	{
+		label: 'Brightspot Radio',
+		matches: ['*://*.ksjd.org/*', '*://*.mainepublic.org/*'],
+		js: 'brightspot.js',
+		id: 'brightspot',
+		usesBlocklist: true,
+	},
+	{
 		label: 'StreamGuys SGplayer',
 		matches: ['*://player.streamguys.com/*'],
 		js: 'streamguys.js',
 		id: 'streamguys',
 		allFrames: true,
+	},
+	{
+		label: 'StreamOn.fm Webplayer',
+		matches: ['*://listen.streamon.fm/*'],
+		js: 'streamon.js',
+		id: 'streamon',
+		usesBlocklist: true,
 	},
 ];
