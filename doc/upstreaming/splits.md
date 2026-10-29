@@ -7,7 +7,7 @@ status: locally-verified
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
   - resource: "opencode://ses_e76b14bfcffeBWpTR6f6Qu87ed"
-    title: Human confirms station capture as the upstreamable core; session audits upstream novelty, names the station-ident bookmark and divides the series
+    title: Human confirms station capture as the upstreamable core; session audits upstream novelty and reworks the split into per-line radiocult-ident and atproto-ident series
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
     title: Human commissions OAuth-first rework and independent Sol-built split histories; parent reviews boundaries, preserves the complete assemblage and assigns bookmarks
   - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
@@ -39,9 +39,16 @@ sources:
 | Purpose | Workspace | Bookmark / revision |
 | --- | --- | --- |
 | Preserved combined implementation and local artifacts | `/home/rektide/src/web-scrobbler-teal` | `teal-assemblage-20261028` → `81942226` |
-| Station identity transport (shared base) | shared repository | `station-ident` → `0eb87a1c` |
-| RadioCult submission series | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `3cacceab` |
-| AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `e1267413` |
+| RadioCult identity transport base | shared repository | `radiocult-ident` → `0480b542` |
+| RadioCult submission series | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `e4119fea` |
+| AT Protocol identity transport base | shared repository | `atproto-ident` → `5872c6e4` |
+| AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `079d85f7` |
+
+The `-ident` bookmarks are per-line copies of the same station-identity
+transport patch, so each submission series is fully independent: neither
+history contains the other's commits, and each is self-contained for a
+single upstream PR. Both copies descend directly from upstream
+`48a84b9f1b2327af3abef8678e1d0691460e589e`.
 
 The feature workspaces share the same JJ repository. Their working directories
 and npm installations are separate. The parent retains the historical assemblage
@@ -52,7 +59,11 @@ Both feature workspaces have clean, empty working-copy children of their
 completed tips. The parent verified the bookmark targets, shared fork point,
 workspace identities and absence of the other feature's source code. The old
 local `atproto` name was moved sideways only after review; its former development
-history remains in the dated assemblage. Remote bookmarks were not pushed.
+history remains in the dated assemblage. The fork's remote branches were
+later pushed once and now hold the pre-rework revisions; the local
+`radiocult` and `atproto` bookmarks have since been rebased onto their
+per-line `-ident` copies and will diverge from those remotes until a push
+is deliberately chosen.
 
 ## Preserved assemblage
 
@@ -79,47 +90,53 @@ The paired website change remains commit
 `/home/rektide/src/web-scrobbler-github`; the
 [OAuth account](/doc/upstreaming/oauth.md) records its contract and verification.
 
-## Shared prerequisite and feature boundaries
+## Station identity transport and feature boundaries
 
-Both focused histories use upstream
-`48a84b9f1b2327af3abef8678e1d0691460e589e` plus the **same** prerequisite
-commit, now named by its own bookmark:
+Each focused history uses upstream
+`48a84b9f1b2327af3abef8678e1d0691460e589e` plus its **own copy** of the
+station-identity transport commit, named by the per-line bookmark:
 
-**`station-ident` → `0eb87a1c0f67ec57da21a873200c97188b67dbba` — `feat: transport optional station metadata with songs`.**
+**`radiocult-ident` → `0480b54237feaaad63064f4b400f5ed46a8369bc` and
+`atproto-ident` → `5872c6e44c32d9d817a8a20c5a5635d4fc43aef4` —
+`feat: transport optional station metadata with songs`.**
 
-This layer is a deliverable in its own right, not merely a prerequisite. It
-gives connectors a generic way to say which broadcast station selected the
-playing track — `Station` / `ExternalIdentifier` types, optional station data
-on connector state, `Connector.getStation`, controller propagation into
-`song.parsed.station`, and transport tests. It has no RadioCult implementation
-and no AT Protocol dependency. An upstream audit on 2026-10-29 (see session
-source below) confirmed nothing similar exists upstream: core `State` carries
-no station field, no `getStation` exists, and existing radio connectors treat
-station identity as a scraping concern — `live365.ts` reads the station text
-only to subtract it from the artist field, and `tunein.ts` reads the station
-URL only to swap artist and track. `ConnectorMeta.label` is a static
-per-connector display name, and `originUrl` describes a track's origin, not
-the selecting station; `isPodcast` is the nearest precedent for adding a song
-attribute to `State`.
+The two copies carry an identical patch (jj `duplicate` of the reviewed
+`0eb87a1c`, then each feature line rebased onto its own copy; tree
+comparison against the former tips showed zero differences). This layer is
+a deliverable in its own right, not merely a prerequisite. It gives
+connectors a generic way to say which broadcast station selected the
+playing track — `Station` / `ExternalIdentifier` types, optional station
+data on connector state, `Connector.getStation`, controller propagation
+into `song.parsed.station`, and transport tests. It has no RadioCult
+implementation and no AT Protocol dependency. An upstream audit on
+2026-10-29 (see session source below) confirmed nothing similar exists
+upstream: core `State` carries no station field, no `getStation` exists,
+and existing radio connectors treat station identity as a scraping
+concern — `live365.ts` reads the station text only to subtract it from
+the artist field, and `tunein.ts` reads the station URL only to swap
+artist and track. `ConnectorMeta.label` is a static per-connector display
+name, and `originUrl` describes a track's origin, not the selecting
+station; `isPodcast` is the nearest precedent for adding a song attribute
+to `State`.
 
 RadioCult owns its player connector, public station enrichment, top-level
 listening-page URL plumbing and station-name preference; it is the worked
-example consuming the station-ident transport. AT Protocol owns
-Teal/Rocksky mapping, OAuth, account UI and PDS writes, including consumption
-of optional generic station data. The two feature bookmarks are sibling
-series stacked on `station-ident`; neither needs the other's feature code.
+example consuming the transport. AT Protocol owns Teal/Rocksky mapping,
+OAuth, account UI and PDS writes, including consumption of optional
+generic station data. The two series share no commits; neither needs the
+other's feature code.
 
-An upstream presentation must account for the shared prerequisite explicitly.
-It can land with the first feature, after which the other feature's remaining
-commits are rebased onto that accepted upstream base.
+Because both PRs carry the same transport patch, whichever lands first
+accepts it upstream; the other series is then rebased onto that accepted
+base and its `-ident` commit drops out.
 
 ## RadioCult series
 
 | Layer | Commit | Purpose |
 | --- | --- | --- |
-| Station identity transport (`station-ident`) | `0eb87a1c0f67ec57da21a873200c97188b67dbba` | Optional station data and transport tests |
-| Connector | `436f5e241c09d1cadea8edfaa2bc4d3bb130d172` | Four player variants, station parsing/enrichment, frame listening-origin support and connector tests |
-| Preference | `3cacceab17353fdbf8e4c62557e2555fadab8062` | Configurable station trademark filtering, native UI/localization and option regression tests |
+| Identity transport (`radiocult-ident`) | `0480b54237feaaad63064f4b400f5ed46a8369bc` | Optional station data and transport tests |
+| Connector | `e7fc4740bc1e973683f0cdadc8b88c084cf269ce` | Four player variants, station parsing/enrichment, frame listening-origin support and connector tests |
+| Preference | `e4119fea9c24cacbfbf3a7a978ab545e69afe55a` | Configurable station trademark filtering, native UI/localization and option regression tests |
 
 Sol high reconstructed these layers from immutable assemblage revision
 `738625f249fdab3b4cfdfd6202ae42d0c1fb0757`. The series retains blocklisting,
@@ -156,13 +173,14 @@ agent's successful checks.
 Completed by a separate Sol high after the OAuth rewrite and assemblage
 checkpoint. Its archived feature source is `81942226`, with extraction reads
 bound to the identical production-code tip `d4e39777`; the exact common base
-is `0eb87a1c`.
+was `0eb87a1c`, now the line's own `atproto-ident` copy
+`5872c6e44c32d9d817a8a20c5a5635d4fc43aef4`.
 
-| Layer after the common prerequisite | Commit | Purpose |
+| Layer after the identity transport | Commit | Purpose |
 | --- | --- | --- |
-| Records | `1b2c1efcaba60c788eb7cef935880eadf0a27711` | Stable Teal/Rocksky mapping, destination vocabulary and mapping tests |
-| Complete feature | `0316c77504b6a9356d1b81132969e471b8afa3e5` | Durable extension-owned OAuth, scrobbler, account UI, localized labels, callback boundaries and native unit coverage |
-| Browser verification | `e1267413e77b12c2ddaf93ae5586bb6643757106` | Source-built Chromium harness, native network routing, six browser cases and contributor guide |
+| Records | `7a93bb1fd495bf2ad9777cb547f1844265c0a6a5` | Stable Teal/Rocksky mapping, destination vocabulary and mapping tests |
+| Complete feature | `5f83b796aa09b7293fcc840c1d8eb0ad3c786405` | Durable extension-owned OAuth, scrobbler, account UI, localized labels, callback boundaries and native unit coverage |
+| Browser verification | `079d85f7bc4443350ed4eeba6db7117ef61989c7` | Source-built Chromium harness, native network routing, six browser cases and contributor guide |
 
 The production AT Protocol modules, content callback relay and account component
 are byte-for-byte equal to the reviewed OAuth result. Parent comparison verified
