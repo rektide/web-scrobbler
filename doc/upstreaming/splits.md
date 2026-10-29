@@ -6,6 +6,8 @@ resource: /doc/upstreaming/splits.md
 status: locally-verified
 generated: { by: "model:openai/gpt-6-astra#xhigh", at: 2026-10-28 }
 sources:
+  - resource: "opencode://ses_e76b14bfcffeBWpTR6f6Qu87ed"
+    title: Human confirms station capture as the upstreamable core; session audits upstream novelty, names the station-ident bookmark and divides the series
   - resource: "opencode://ses_e7ba2bd5affezqZcLye2GkxcFE"
     title: Human commissions OAuth-first rework and independent Sol-built split histories; parent reviews boundaries, preserves the complete assemblage and assigns bookmarks
   - resource: "opencode://ses_e7b8b15c0fferGf3Etqbeu8lip"
@@ -37,6 +39,7 @@ sources:
 | Purpose | Workspace | Bookmark / revision |
 | --- | --- | --- |
 | Preserved combined implementation and local artifacts | `/home/rektide/src/web-scrobbler-teal` | `teal-assemblage-20261028` → `81942226` |
+| Station identity transport (shared base) | shared repository | `station-ident` → `0eb87a1c` |
 | RadioCult submission series | `/home/rektide/src/web-scrobbler-radiocult` | `radiocult` → `3cacceab` |
 | AT Protocol submission series | `/home/rektide/src/web-scrobbler-atproto` | `atproto` → `e1267413` |
 
@@ -79,21 +82,32 @@ The paired website change remains commit
 ## Shared prerequisite and feature boundaries
 
 Both focused histories use upstream
-`48a84b9f1b2327af3abef8678e1d0691460e589e` plus the **same** prerequisite commit:
+`48a84b9f1b2327af3abef8678e1d0691460e589e` plus the **same** prerequisite
+commit, now named by its own bookmark:
 
-**`0eb87a1c0f67ec57da21a873200c97188b67dbba` — `feat: transport optional station metadata with songs`.**
+**`station-ident` → `0eb87a1c0f67ec57da21a873200c97188b67dbba` — `feat: transport optional station metadata with songs`.**
 
-This layer contains `Station` / `ExternalIdentifier`, optional station data on
-connector state, connector/song accessors, controller propagation and generic
-transport tests. It has no RadioCult implementation or AT Protocol dependency.
-The parent reviewed the interface and tests, including metadata enrichment and
-clearing without replacing the playing song.
+This layer is a deliverable in its own right, not merely a prerequisite. It
+gives connectors a generic way to say which broadcast station selected the
+playing track — `Station` / `ExternalIdentifier` types, optional station data
+on connector state, `Connector.getStation`, controller propagation into
+`song.parsed.station`, and transport tests. It has no RadioCult implementation
+and no AT Protocol dependency. An upstream audit on 2026-10-29 (see session
+source below) confirmed nothing similar exists upstream: core `State` carries
+no station field, no `getStation` exists, and existing radio connectors treat
+station identity as a scraping concern — `live365.ts` reads the station text
+only to subtract it from the artist field, and `tunein.ts` reads the station
+URL only to swap artist and track. `ConnectorMeta.label` is a static
+per-connector display name, and `originUrl` describes a track's origin, not
+the selecting station; `isPodcast` is the nearest precedent for adding a song
+attribute to `State`.
 
 RadioCult owns its player connector, public station enrichment, top-level
-listening-page URL plumbing and station-name preference. AT Protocol owns
-Teal/Rocksky mapping, OAuth, account UI and PDS writes, including consumption of
-optional generic station data. The two bookmarks are sibling feature series
-after the shared prerequisite; neither needs the other's feature code.
+listening-page URL plumbing and station-name preference; it is the worked
+example consuming the station-ident transport. AT Protocol owns
+Teal/Rocksky mapping, OAuth, account UI and PDS writes, including consumption
+of optional generic station data. The two feature bookmarks are sibling
+series stacked on `station-ident`; neither needs the other's feature code.
 
 An upstream presentation must account for the shared prerequisite explicitly.
 It can land with the first feature, after which the other feature's remaining
@@ -103,7 +117,7 @@ commits are rebased onto that accepted upstream base.
 
 | Layer | Commit | Purpose |
 | --- | --- | --- |
-| Common prerequisite | `0eb87a1c0f67ec57da21a873200c97188b67dbba` | Optional station data and transport tests |
+| Station identity transport (`station-ident`) | `0eb87a1c0f67ec57da21a873200c97188b67dbba` | Optional station data and transport tests |
 | Connector | `436f5e241c09d1cadea8edfaa2bc4d3bb130d172` | Four player variants, station parsing/enrichment, frame listening-origin support and connector tests |
 | Preference | `3cacceab17353fdbf8e4c62557e2555fadab8062` | Configurable station trademark filtering, native UI/localization and option regression tests |
 
