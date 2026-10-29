@@ -2518,6 +2518,13 @@ export default <ConnectorMeta[]>[
 		usesBlocklist: true,
 	},
 	{
+		label: 'The SoCal Sound',
+		matches: ['*://*.thesocalsound.org/*'],
+		js: 'socalsound.js',
+		id: 'socalsound',
+		usesBlocklist: true,
+	},
+	{
 		label: 'AirKast',
 		matches: ['*://api.airkast.net/playlist/*'],
 		js: 'airkast.js',
