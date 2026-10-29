@@ -1765,12 +1765,6 @@ export default <ConnectorMeta[]>[
 		id: 'cpr',
 	},
 	{
-		label: 'WXPN',
-		matches: ['*://xpn.org/*'],
-		js: 'xpn.js',
-		id: 'xpn',
-	},
-	{
 		label: 'FRISKY',
 		matches: ['*://*.frisky.fm/*'],
 		js: 'friskyfm.js',
