@@ -1772,9 +1772,15 @@ export default <ConnectorMeta[]>[
 		matches: [
 			'*://radio.securenetsystems.net/*',
 			'*://stream*.securenetsystems.net/*',
+			// WYCE-specific deployment wrapper: grcmc.org embeds the SNS
+			// Cirrus Encore widget (ssiEncore) in a recursive same-origin
+			// frame at /wyce/listen — the only known third-party ssiEncore
+			// deployment.
+			'*://grcmc.org/*',
 		],
 		js: 'securenetsystems.js',
 		id: 'securenetsystems',
+		allFrames: true,
 	},
 	{
 		label: 'uwu radio',
