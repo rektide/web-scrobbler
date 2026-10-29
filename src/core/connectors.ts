@@ -2517,4 +2517,22 @@ export default <ConnectorMeta[]>[
 		allFrames: true,
 		usesBlocklist: true,
 	},
+	{
+		label: 'Spinitron',
+		matches: [
+			'*://spinitron.com/*',
+			'*://widgets.spinitron.com/widget/now-playing*',
+		],
+		js: 'spinitron.js',
+		id: 'spinitron',
+		allFrames: true,
+		usesBlocklist: true,
+	},
+	{
+		label: 'StreamGuys SGplayer',
+		matches: ['*://player.streamguys.com/*'],
+		js: 'streamguys.js',
+		id: 'streamguys',
+		allFrames: true,
+	},
 ];
