@@ -2535,4 +2535,11 @@ export default <ConnectorMeta[]>[
 		id: 'streamguys',
 		allFrames: true,
 	},
+	{
+		label: 'StreamOn.fm Webplayer',
+		matches: ['*://listen.streamon.fm/*'],
+		js: 'streamon.js',
+		id: 'streamon',
+		usesBlocklist: true,
+	},
 ];
