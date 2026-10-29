@@ -2576,10 +2576,17 @@ export default <ConnectorMeta[]>[
 	},
 	{
 		label: 'StreamOn.fm Webplayer',
-		matches: ['*://listen.streamon.fm/*'],
+		matches: [
+			'*://listen.streamon.fm/*',
+			'*://*.mystreamplayer.com/*',
+			'*://player.gotradio.com/*',
+			'*://player.live365.com/*',
+			'*://player.181fm.com/*',
+		],
 		js: 'streamon.js',
 		id: 'streamon',
 		usesBlocklist: true,
+		allFrames: true,
 	},
 	{
 		label: 'WETA',
