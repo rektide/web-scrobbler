@@ -1705,6 +1705,20 @@ export default <ConnectorMeta[]>[
 		id: 'linemusic',
 	},
 	{
+		// EXPERIMENTAL / QUARANTINED — headless-poller spike; see
+		// src/connectors/kcoq.ts header. stream.aiir.com 302-redirects to a
+		// stream-0X.aiir.com farm (short-lived JWT query param), so both the
+		// entry URL and the committed media-document host are matched. The
+		// station-unique path token avoids matching other Aiir stations.
+		label: 'KCOQ',
+		matches: [
+			'*://stream.aiir.com/vizxgvfitbpuv*',
+			'*://stream-0*.aiir.com/vizxgvfitbpuv*',
+		],
+		js: 'kcoq.js',
+		id: 'kcoq',
+	},
+	{
 		label: 'KCRW',
 		matches: ['*://www.kcrw.com/*'],
 		js: 'kcrw.js',
