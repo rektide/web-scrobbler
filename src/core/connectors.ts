@@ -1496,18 +1496,6 @@ export default <ConnectorMeta[]>[
 		id: 'queup',
 	},
 	{
-		label: 'SoundStack',
-		matches: [
-			'*://*.mystreamplayer.com/*',
-			'*://player.gotradio.com/*',
-			'*://player.live365.com/*',
-			'*://player.181fm.com/*',
-		],
-		js: 'soundstack.js',
-		id: 'soundstack',
-		allFrames: true,
-	},
-	{
 		label: 'Live365',
 		matches: ['*://live365.com/*'],
 		js: 'live365.js',
