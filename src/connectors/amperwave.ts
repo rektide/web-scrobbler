@@ -54,14 +54,16 @@ function getStationId(): string | null {
 
 const stationId = getStationId();
 
+const isPlayerPopup = window.location.host === 'player.amperwave.net';
+
 let station: Station | null = null;
 
 /**
- * The popup player is a React app that currently fails to boot (its
- * `#main` container stays empty), so it exposes no readable DOM. The
- * player and the station-site widgets both poll the public now-playing
- * API; this connector fetches the same JSON, following the RadioCult
- * precedent.
+ * The player and the station-site widgets both poll the public
+ * now-playing API; this connector fetches the same JSON, following the
+ * RadioCult precedent. The popup exposes its own now-playing DOM once
+ * the stream starts (see below); the API cache backs up the widget
+ * surface and supplies album metadata.
  */
 let currentPerformance: Performance | null = null;
 
@@ -124,11 +126,28 @@ function loadNowPlaying() {
 		});
 }
 
-// The first entry of the history array is the current performance; on
-// station sites the widget DOM below takes precedence over these values.
+/**
+ * The first entry of the history array is the current performance. On
+ * station sites the widget DOM below takes precedence over these values.
+ *
+ * On the popup, the DOM deliberately shows empty song/artist elements
+ * while the preroll ad plays, which keeps ads from being scrobbled.
+ * Mirror that gate: only fill album art extras once the stream player
+ * mounts, and let the DOM own artist/track there.
+ */
 Connector.getTrackInfo = () => {
 	if (!currentPerformance) {
 		return null;
+	}
+
+	if (isPlayerPopup) {
+		if (!document.querySelector('#v7_stream_player')) {
+			return null;
+		}
+
+		return {
+			album: currentPerformance.album || null,
+		};
 	}
 
 	return {
@@ -143,22 +162,54 @@ Connector.getTrackInfo = () => {
 	};
 };
 
-// Now-playing widget injected into station site pages by
+// Two DOM surfaces: the popup's React player and the now-playing widget
+// injected into station site pages by
 // `player.amperwave.net/widget/nowplaying-latest.min.js`.
-Connector.playerSelector = '.nowplaying-widget-container';
+Connector.playerSelector = [
+	'.v7-player__wrapper',
+	'.nowplaying-widget-container',
+];
 
-Connector.trackSelector = `${Connector.playerSelector} .track`;
+Connector.trackSelector = [
+	'.v7-player__song-name',
+	'.nowplaying-widget-container .track',
+];
 
-Connector.artistSelector = `${Connector.playerSelector} .artist-album`;
+Connector.artistSelector = [
+	'.v7-player__artist',
+	'.nowplaying-widget-container .artist-album',
+];
 
-Connector.trackArtSelector = `${Connector.playerSelector} img.album-art`;
+Connector.trackArtSelector = [
+	'.v7-player__album-cover',
+	'.nowplaying-widget-container img.album-art',
+];
 
 Connector.isTrackArtDefault = (url) => url?.includes('/no-art.');
 
-// The popup player is the only Amperwave surface that plays audio; the
-// station-site widget is metadata-only. Scrobble only while the tab is
-// actually audible, following the AirKast precedent.
-Connector.useTabAudibleApi();
+// In the popup the stream plays in a <video> inside #v7_stream_player,
+// and the play control swaps in a stop icon while it runs. Both signals
+// appear only once the stream (not the preroll ad) starts, so they gate
+// the ad phase as well as user pauses.
+Connector.isPlaying = () => {
+	const video = document.querySelector('#v7_stream_player video');
+
+	if (video instanceof HTMLVideoElement) {
+		return !video.paused && !video.ended;
+	}
+
+	const stopIcon = document.querySelector(
+		'.v7-stream-player__play img[src*="stop_icon"]',
+	);
+
+	if (stopIcon) {
+		return true;
+	}
+
+	// Station-site widget pages are metadata-only; nothing is playing
+	// there.
+	return false;
+};
 
 Connector.getChannelId = () => stationId;
 
