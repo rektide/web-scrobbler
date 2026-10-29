@@ -1496,18 +1496,6 @@ export default <ConnectorMeta[]>[
 		id: 'queup',
 	},
 	{
-		label: 'SoundStack',
-		matches: [
-			'*://*.mystreamplayer.com/*',
-			'*://player.gotradio.com/*',
-			'*://player.live365.com/*',
-			'*://player.181fm.com/*',
-		],
-		js: 'soundstack.js',
-		id: 'soundstack',
-		allFrames: true,
-	},
-	{
 		label: 'Live365',
 		matches: ['*://live365.com/*'],
 		js: 'live365.js',
@@ -1763,12 +1751,6 @@ export default <ConnectorMeta[]>[
 		matches: ['*://www.cpr.org/*'],
 		js: 'cpr.js',
 		id: 'cpr',
-	},
-	{
-		label: 'WXPN',
-		matches: ['*://xpn.org/*'],
-		js: 'xpn.js',
-		id: 'xpn',
 	},
 	{
 		label: 'FRISKY',
@@ -2563,7 +2545,7 @@ export default <ConnectorMeta[]>[
 	},
 	{
 		label: 'StreamGuys SGplayer',
-		matches: ['*://player.streamguys.com/*'],
+		matches: ['*://player.streamguys.com/*', '*://xpn.org/*'],
 		js: 'streamguys.js',
 		id: 'streamguys',
 		allFrames: true,
