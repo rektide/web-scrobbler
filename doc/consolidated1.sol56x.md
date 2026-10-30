@@ -1,7 +1,7 @@
 ---
 type: Assessment
 title: Accepted page-world lifecycle pattern — departing assessment
-description: Faithful port of the operator-approved throttle and retryUntil, verified caller compatibility, and the remaining cancellation, readiness and lifecycle limits of the consolidated migration.
+description: Faithful port of the operator-approved throttle and retryUntil, verified caller compatibility and standalone build grounding, and the remaining lifecycle limits and upstream novelty of the consolidated migration.
 resource: /doc/consolidated1.sol56x.md
 status: draft
 author: 'model:openai/gpt-6.1-sol#xhigh'
@@ -10,7 +10,7 @@ generated:
     by: 'model:openai/gpt-6.1-sol#xhigh'
 sources:
     - resource: opencode://ses_e75ceb8aaffeVHdqHMb9ed07QL
-      title: Port the accepted pattern, inspect all eleven callers, verify builds and lifecycle edge cases, and assess the remaining tradeoffs
+      title: Port the accepted pattern, assess lifecycle tradeoffs, and verify all connector imports, independent build outputs and harness-provided sharing for the follow-up
     - resource: opencode://ses_e76ab1d35ffe5rfIc6T3xll18h
       title: Commission the consolidated lifecycle update and departing assessment under the operator-frozen design
     - resource: /src/core/content/page-lifecycle.ts
@@ -35,6 +35,16 @@ sources:
       title: Exact esbuild compilation command and connector entry glob
     - resource: /vite.configs.ts
       title: Connector-only development watch directory
+    - resource: /src/connectors/connector.d.ts
+      title: Ambient connector globals and type-only references, not runtime core imports
+    - resource: /src/core/content/main.ts
+      title: Harness imports core modules, installs globals and dynamically loads the selected connector artifact
+    - resource: /src/connectors/archive.ts
+      title: Type-only cross-connector import and separate page-world script injection
+    - resource: /src/core/content/connector.ts
+      title: Connector.injectScript delegates loading of a separate page-world artifact
+    - resource: /src/core/content/util.ts
+      title: Page-world loading via script.src rather than an ES module import between connectors
 tags:
     - page-world
     - lifecycle
@@ -97,6 +107,117 @@ In particular, that report's claim that Deezer's zombie-listener window
 was closed is no longer generally true with the accepted contract.
 The [original survey](/doc/dom-inject-lifecycle.md) explains the worthwhile
 extraction, but its cancel-handle proposal is historical, not current law.
+
+## Build grounding and upstream novelty — follow-up
+
+**Yes: connector scripts are independent build artifacts, with no shared
+chunks or runtime module imports between their emitted files. No: that
+does not mean they are self-sufficient programs, or that their sources
+contain no imports after this migration.**
+
+### Independent entries; imports are inlined, not shared at runtime
+
+[`scripts/compile-connectors.ts:16–18`](/scripts/compile-connectors.ts)
+passes `src/connectors/*.ts` as separate esbuild entries with `--bundle`.
+It does not enable splitting or a shared connector entry. Lines 30–34
+move those outputs into the browser's connector directory; there is no
+subsequent connector linking step there. The directory is currently flat:
+**374 matching `.ts` files = 362 isolated-world scripts + 11 page-world
+scripts + `connector.d.ts`**. Literally "every file" needs qualification:
+`eslint.config.js` is build-tool configuration, not a matched connector
+entry; the matched declaration file produces an empty `connector.d.js`
+IIFE, not a useful connector.
+
+I reran the actual command with only a diagnostic metafile added:
+
+```sh
+npx esbuild src/connectors/*.ts --bundle --outdir=build/connectorraw --tsconfig=tsconfig.connectors.json --metafile=build/connectors-grounding-meta.json
+```
+
+Metafile checks found **374 outputs, each with its own corresponding
+`entryPoint`; zero output import edges; zero output exports; and no
+non-entry/shared chunks**. Every isolated-world output has only its own
+source file as an input. Exactly eleven outputs additionally contain
+`src/core/content/page-lifecycle.ts`, each as its own inlined copy.
+For generated-code receipts, `build/connectorraw/deezer-dom-inject.js:3–49`
+contains that copy; `build/connectorraw/archive.js:5,23,33` instead references
+ambient `MetadataFilter`/`Connector` and requests its separate page script.
+These ignored build files/metafile are diagnostic output, not new tracked
+deliverables.
+
+A TypeScript AST scan of all 374 source entries found **eleven runtime
+import declarations, all in page-world scripts, all importing only
+`@/core/content/page-lifecycle`**. The complete import-site receipts are:
+
+- `src/connectors/deezer-dom-inject.ts:13–17`,
+  `src/connectors/eggs-dom-inject.ts:13`,
+  `src/connectors/gensokyoradio-dom-inject.ts:13`,
+  `src/connectors/hearthis-at-dom-inject.ts:13`;
+- `src/connectors/ilovemusic-dom-inject.ts:1`,
+  `src/connectors/jwplayer-dom-inject.ts:1`,
+  `src/connectors/musickit-dom-inject.ts:13`,
+  `src/connectors/telegram-k-dom-inject.ts:34`;
+- `src/connectors/vk-dom-inject.ts:13`,
+  `src/connectors/webhook-auth-dom-inject.ts:1`,
+  `src/connectors/youtube-music-dom-inject.ts:13`.
+
+There are **zero isolated-world runtime imports**, zero runtime imports
+from another connector file, and no runtime re-exports, dynamic imports or
+`require()` calls anywhere in these `.ts` entries. Nine import declarations
+are type-only, including
+[`archive.ts:3`](/src/connectors/archive.ts)'s import from
+`./jwplayer-dom-inject`; those do not load or inline that script.
+`export {}` and `typeof import(...)` type expressions likewise do not
+create runtime module dependencies. The uncompiled ESLint configuration's
+own import is not a connector-script counterexample.
+
+### Isolated-world sharing is supplied by the harness
+
+[`src/connectors/connector.d.ts:1–8`](/src/connectors/connector.d.ts)
+declares `Connector`, `Util`, `MetadataFilter`, `webScrobblerScripts` and
+`STARTER_LOADED`; it provides types, not implementations. The actual core
+modules are imported by
+[`src/core/content/main.ts:1–5`](/src/core/content/main.ts), assigned to
+`window.Connector`, `window.Util` and `window.MetadataFilter` at lines
+47–50, **before** the selected `connectors/${connector.js}` artifact is
+dynamically loaded at line 55. The harness has its own Vite content build
+([`vite.configs.ts:66–85`](/vite.configs.ts)); core implementations are not
+rebundled into the individual isolated-world connectors.
+
+Thus the isolated connectors' shared-core interface is ambient globals
+supplied by that separately built harness, not connector-to-core source
+imports or shared connector chunks. Do not extend "no runtime imports"
+to the harness itself: its dynamic import is the connector loading path.
+Likewise, [`archive.ts:60`](/src/connectors/archive.ts) loads the separate
+JWPlayer page-world artifact through `Connector.injectScript`
+([`connector.ts:521–531`](/src/core/content/connector.ts)), which sets a
+`script.src` through [`util.ts:766–773`](/src/core/content/util.ts).
+Independent artifacts do not imply that no connector ever loads a second
+artifact, or that a connector runs without its harness or host page.
+
+### First imported shared connector code: yes, a new source convention
+
+The checked upstream baseline, `master@origin` at **`48a84b9f`**, has the
+same 374 `.ts` entries and **zero runtime imports/re-exports/import calls**
+in an AST scan of their revision-bound contents (`jj file show -r
+48a84b9f ...`). Combined with the current complete scan, this establishes
+that **this migration introduces the first and only imported shared-code
+module in the inspected connector tree**, `page-lifecycle.ts`. This is a
+comparison with that baseline, not a claim to have audited every historical
+revision or to have invented imports elsewhere in the application.
+
+For upstreaming, my honest reading is: **novel connector-source pattern,
+existing build capability, unchanged independent runtime packaging**. A
+maintainer can reasonably question a new helper layer, its public surface,
+cross-connector coupling in maintenance, missing lifecycle tests and the
+development-watch gap. I would expect those questions rather than a build
+incompatibility objection; I cannot predict acceptance, and found no code
+establishing a prohibition on runtime source imports. Present the actual
+eleven-site reuse and bug-fix rationale as an architectural proposal, not
+as merely following an already established connector import convention.
+No new shared-runtime loader or chunk deployment is needed. The survey's
+analogy between provisioned globals and bundler-provided helpers explains
+their similar purpose; it does not make them an existing common convention.
 
 ## Where it fits the six retry callers
 
