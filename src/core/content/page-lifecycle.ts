@@ -43,93 +43,70 @@ export function runWithCleanup(setup: () => () => void): void {
 /**
  * Create a leading-plus-trailing throttle around `fn`.
  *
- * `run` executes `fn` immediately if at least `interval` milliseconds have
- * passed since the last execution; otherwise it schedules one trailing
- * execution, so a burst of calls produces at most one leading and one
- * trailing run. All time bookkeeping lives here; call sites never compute
- * durations.
+ * Run immediately when the window has elapsed; otherwise schedule one
+ * trailing run. A pending trailing run cannot be cancelled.
  * @param fn - Function to execute
  * @param interval - Minimum milliseconds between executions
- * @returns Handle whose `run` requests an execution and whose `stop`
- * cancels any pending trailing execution; `stop` is safe in any state.
+ * @returns Function that requests an execution
  */
-export function throttle(
-	fn: () => void,
-	interval: number,
-): { run: () => void; stop: () => void } {
+export function throttle(fn: () => void, interval: number): () => void {
 	let lastRun = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
-	const run = () => {
+	// Also the trailing callback: clearing the stale handle reopens
+	// scheduling for the next burst.
+	function execute() {
 		lastRun = Date.now();
+
 		if (timer !== null) {
 			clearTimeout(timer);
 			timer = null;
 		}
+
 		fn();
-	};
+	}
 
-	return {
-		run: () => {
-			const remaining = interval - (Date.now() - lastRun);
+	return function runThrottle() {
+		const remaining = interval - (Date.now() - lastRun);
 
-			// Leading edge: the window has elapsed, so run now.
-			if (remaining <= 0) {
-				run();
-				return;
-			}
-
-			// Trailing edge: schedule this burst's closing run, once.
+		// Trailing edge: the window is still open, so schedule this
+		// burst's closing run and wait for it.
+		if (remaining > 0) {
 			if (timer === null) {
-				timer = setTimeout(() => {
-					timer = null;
-					run();
-				}, remaining);
+				timer = setTimeout(execute, remaining);
 			}
-		},
-		stop: () => {
-			if (timer === null) {
-				return;
-			}
-			clearTimeout(timer);
-			timer = null;
-		},
+			return;
+		}
+
+		// Leading edge: the window has elapsed, so run now.
+		execute();
 	};
 }
 
 /**
- * Run `attempt` immediately and on `document.body` child list mutations
- * until it succeeds. Attempts are throttled to at most one per `interval`,
- * with a trailing attempt per mutation burst so no burst is ever dropped.
+ * Run `attempt` immediately and on body child list mutations until it
+ * returns true. A pending trailing attempt can still run after disconnect.
  * @param attempt - Action to retry; returns true on success
  * @param interval - Minimum milliseconds between attempts
- * @returns Function that stops the retries and disconnects the observer
+ * @returns Function that disconnects the retry observer
  */
 export function retryUntil(
 	attempt: () => boolean,
 	interval: number,
 ): () => void {
-	const throttled = throttle(() => {
-		if (!attempt()) {
-			return;
+	const runThrottle = throttle(function tryOnce() {
+		if (attempt()) {
+			retryObserver.disconnect();
 		}
-		stop();
 	}, interval);
 
-	const stop = () => {
-		retryObserver.disconnect();
-		throttled.stop();
-	};
-
-	const retryObserver = new MutationObserver(() => {
-		throttled.run();
-	});
+	const retryObserver = new MutationObserver(runThrottle);
 
 	retryObserver.observe(document.body, {
 		childList: true,
 		subtree: true,
 	});
-	throttled.run();
+	runThrottle();
 
-	return stop;
+	return retryObserver.disconnect.bind(retryObserver);
 }
