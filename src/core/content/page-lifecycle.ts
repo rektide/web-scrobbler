@@ -49,7 +49,7 @@ export function runWithCleanup(setup: () => () => void): void {
  * @param interval - Minimum milliseconds between executions
  * @returns Function that requests an execution
  */
-export function throttle(fn: () => void, interval: number): () => void {
+function throttle(fn: () => void, interval: number): () => void {
 	let lastRun = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 

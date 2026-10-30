@@ -62,7 +62,7 @@ runWithCleanup(() => {
 
 	// This script only runs on YouTube Music, so the player is expected
 	// eventually, but the redesigned player can render after page load.
-	const stopRetrying = retryUntil(tryAttach, 5000);
+	const stopRetrying = retryUntil(tryAttach, 2000);
 
 	return () => {
 		// remove the subscribers added by this extension from the array.

@@ -199,6 +199,7 @@ describe('MusicKit readiness polling', () => {
 function stubDocument() {
 	vi.stubGlobal('document', {
 		body: {},
+		getElementById: vi.fn().mockReturnValue(null),
 		querySelector: vi.fn().mockReturnValue(null),
 	});
 	vi.stubGlobal(
@@ -269,5 +270,29 @@ describe('Eggs subscription cleanup', () => {
 		page.cleanup?.();
 		expect(player.addEventListener).not.toHaveBeenCalled();
 		expect(player.removeEventListener).not.toHaveBeenCalled();
+	});
+});
+
+describe('YouTube Music discovery interval', () => {
+	it('retries at 2000 ms rather than 5000 ms', async () => {
+		stubDocument();
+		const callbacks: Array<() => void> = [];
+		vi.stubGlobal(
+			'MutationObserver',
+			class {
+				observe = vi.fn();
+				disconnect = vi.fn();
+				constructor(callback: () => void) {
+					callbacks.push(callback);
+				}
+			},
+		);
+		await import('@/connectors/youtube-music-dom-inject');
+		expect(document.getElementById).toHaveBeenCalledTimes(1);
+		callbacks[1]();
+		vi.advanceTimersByTime(1999);
+		expect(document.getElementById).toHaveBeenCalledTimes(1);
+		vi.advanceTimersByTime(1);
+		expect(document.getElementById).toHaveBeenCalledTimes(2);
 	});
 });
