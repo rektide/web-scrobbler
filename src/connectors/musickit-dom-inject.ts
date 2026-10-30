@@ -10,7 +10,7 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
 runWithCleanup(() => {
 	interface MusicKitWindow {
@@ -43,23 +43,26 @@ runWithCleanup(() => {
 		isPlaying: boolean;
 	}
 
-	// Set by the retry below once the MusicKit instance is available.
+	// Set by the poll below once the MusicKit instance is available.
 	// Event listeners only fire after it is set, but every reader still
 	// guards so a cleanup before that point cannot throw.
 	let instance: MusicKitInstance | null = null;
 
-	const stopRetrying = retryUntil(() => {
+	const retryTimer = setInterval(tryAttach, 100);
+	tryAttach();
+
+	function tryAttach() {
 		const inst = (
 			window as unknown as MusicKitWindow
-		).MusicKit?.getInstance();
+		).MusicKit?.getInstance?.();
 		if (!inst) {
-			return false;
+			return;
 		}
 
+		clearInterval(retryTimer);
 		instance = inst.player ?? inst;
 		addEventListeners();
-		return true;
-	}, 100);
+	}
 
 	function addEventListeners() {
 		if (!instance) {
@@ -108,7 +111,7 @@ runWithCleanup(() => {
 	}
 
 	return () => {
-		stopRetrying();
+		clearInterval(retryTimer);
 		if (!instance) {
 			return;
 		}

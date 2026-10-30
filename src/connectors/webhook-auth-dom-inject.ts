@@ -1,4 +1,4 @@
-import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
 enum State {
 	Waiting = 'WAITING',
@@ -15,8 +15,14 @@ declare global {
 }
 
 runWithCleanup(() => {
-	const stopRetrying = retryUntil(() => {
-		if (window.wsState() !== State.Accepted) {
+	const approvalTimer = setInterval(tryConfirm, 1000);
+	tryConfirm();
+
+	function tryConfirm() {
+		if (
+			typeof window.wsState !== 'function' ||
+			window.wsState() !== State.Accepted
+		) {
 			return false;
 		}
 
@@ -31,10 +37,11 @@ runWithCleanup(() => {
 			'*',
 		);
 		window.setWSState(State.Confirmed);
+		clearInterval(approvalTimer);
 		return true;
-	}, 1000);
+	}
 
 	return () => {
-		stopRetrying();
+		clearInterval(approvalTimer);
 	};
 });
