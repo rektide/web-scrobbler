@@ -1,4 +1,8 @@
-import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+import {
+	every,
+	runWithCleanup,
+	untilReady,
+} from '@/core/content/page-lifecycle';
 
 /**
  * This script runs in non-isolated environment (eg. internet archive itself)
@@ -70,7 +74,7 @@ runWithCleanup(() => {
 	};
 
 	// Wait until the player is loaded and ready for event subscriptions.
-	const stopRetrying = retryUntil(() => {
+	const stopRetrying = untilReady(function tryAttach() {
 		if (!window.jwplayer) {
 			return false;
 		}
@@ -84,7 +88,7 @@ runWithCleanup(() => {
 		player.on('pause', sendData);
 		attached = true;
 		return true;
-	}, 2000);
+	}, every(2000));
 
 	return () => {
 		stopRetrying();

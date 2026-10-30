@@ -31,7 +31,11 @@ interface Window {
 	appMediaPlaybackController: MediaController;
 }
 
-import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+import {
+	onMutations,
+	runWithCleanup,
+	untilReady,
+} from '@/core/content/page-lifecycle';
 
 runWithCleanup(() => {
 	const W = window as unknown as Window;
@@ -77,16 +81,20 @@ runWithCleanup(() => {
 		}
 	}
 
-	// Wait for the page's media playback controller to appear.
-	const stopRetrying = retryUntil(() => {
-		if (!('appMediaPlaybackController' in W)) {
-			return false;
-		}
+	// Preserve mutation-driven wake-ups, though readiness is a controller global:
+	// assignment alone does not guarantee another attempt without a DOM mutation.
+	const stopRetrying = untilReady(
+		function tryAttach() {
+			if (!('appMediaPlaybackController' in W)) {
+				return false;
+			}
 
-		toggleEventListeners('add');
-		attached = true;
-		return true;
-	}, 1000);
+			toggleEventListeners('add');
+			attached = true;
+			return true;
+		},
+		onMutations(document.body, 1000),
+	);
 
 	return () => {
 		stopRetrying();

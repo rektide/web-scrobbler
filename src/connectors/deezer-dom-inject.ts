@@ -10,29 +10,34 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-import { debugLog, runWithCleanup } from '@/core/content/page-lifecycle';
+import {
+	debugLog,
+	every,
+	runWithCleanup,
+	untilReady,
+} from '@/core/content/page-lifecycle';
 
 runWithCleanup(() => {
-	let retries = 0;
-	const retryTimer = setInterval(() => {
-		retries++;
-		tryAttach();
-	}, 1007);
-	tryAttach();
+	let attempts = 0;
+	const stopRetrying = untilReady(tryAttach, every(1007));
 
 	function tryAttach() {
+		attempts++;
 		if (
 			'dzPlayer' in window &&
 			window.dzPlayer &&
 			'Events' in window &&
 			window.Events
 		) {
-			clearInterval(retryTimer);
 			addEventListeners();
-		} else if (retries >= 6) {
-			clearInterval(retryTimer);
-			debugLog('Failed to initialize deezer connector!', 'warn');
+			return true;
 		}
+		if (attempts >= 7) {
+			debugLog('Failed to initialize deezer connector!', 'warn');
+			// Finished waiting, not attached: initial attempt plus six retries.
+			return true;
+		}
+		return false;
 	}
 
 	interface Events {
@@ -215,7 +220,7 @@ runWithCleanup(() => {
 	}
 
 	return () => {
-		clearInterval(retryTimer);
+		stopRetrying();
 		cleanupEventListeners();
 	};
 });

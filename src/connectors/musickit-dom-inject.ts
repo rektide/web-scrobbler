@@ -10,7 +10,11 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-import { runWithCleanup } from '@/core/content/page-lifecycle';
+import {
+	every,
+	runWithCleanup,
+	untilReady,
+} from '@/core/content/page-lifecycle';
 
 runWithCleanup(() => {
 	interface MusicKitWindow {
@@ -48,20 +52,19 @@ runWithCleanup(() => {
 	// guards so a cleanup before that point cannot throw.
 	let instance: MusicKitInstance | null = null;
 
-	const retryTimer = setInterval(tryAttach, 100);
-	tryAttach();
+	const stopRetrying = untilReady(tryAttach, every(100));
 
 	function tryAttach() {
 		const inst = (
 			window as unknown as MusicKitWindow
 		).MusicKit?.getInstance?.();
 		if (!inst) {
-			return;
+			return false;
 		}
 
-		clearInterval(retryTimer);
 		instance = inst.player ?? inst;
 		addEventListeners();
+		return true;
 	}
 
 	function addEventListeners() {
@@ -111,7 +114,7 @@ runWithCleanup(() => {
 	}
 
 	return () => {
-		clearInterval(retryTimer);
+		stopRetrying();
 		if (!instance) {
 			return;
 		}

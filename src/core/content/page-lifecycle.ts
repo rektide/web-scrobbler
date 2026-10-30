@@ -83,30 +83,76 @@ function throttle(fn: () => void, interval: number): () => void {
 	};
 }
 
+/** Subscribe to wake-ups and return an unsubscribe function. */
+export type RetrySource = (notify: () => void) => () => void;
+
 /**
- * Run `attempt` immediately and on body child list mutations until it
- * returns true. A pending trailing attempt can still run after disconnect.
- * @param attempt - Action to retry; returns true on success
- * @param interval - Minimum milliseconds between attempts
- * @returns Function that disconnects the retry observer
+ * Create a source of throttled child-list mutation notifications.
+ * Observation starts only when subscribed; the first mutation can notify
+ * immediately. Unsubscribing disconnects observation, not a queued trailing run.
+ * @param target - Node whose descendants may change
+ * @param interval - Minimum milliseconds between notifications
+ * @returns Notification source
  */
-export function retryUntil(
+export function onMutations(target: Node, interval: number): RetrySource {
+	return (notify) => {
+		const observer = new MutationObserver(throttle(notify, interval));
+		observer.observe(target, { childList: true, subtree: true });
+		return observer.disconnect.bind(observer);
+	};
+}
+
+/**
+ * Create a periodic notification source, started only when subscribed.
+ * @param interval - Milliseconds between notifications
+ * @returns Notification source
+ */
+export function every(interval: number): RetrySource {
+	return (notify) => {
+		const timer = setInterval(notify, interval);
+		return () => clearInterval(timer);
+	};
+}
+
+/**
+ * Attempt immediately, then on source notifications until finished or disposed.
+ * The source is not activated if the immediate attempt finishes. Late callbacks
+ * are ignored, including trailing mutation notifications after disposal.
+ * @param attempt - Action to retry; true means no more attempts are needed
+ * @param source - Wake-ups to subscribe to after an unsuccessful first attempt
+ * @returns Idempotent function that stops attempts and unsubscribes
+ */
+export function untilReady(
 	attempt: () => boolean,
-	interval: number,
+	source: RetrySource,
 ): () => void {
-	const runThrottle = throttle(function tryOnce() {
-		if (attempt()) {
-			retryObserver.disconnect();
+	let stopped = false;
+	let unsubscribe: (() => void) | undefined;
+
+	function dispose() {
+		if (stopped) {
+			return;
 		}
-	}, interval);
+		stopped = true;
+		unsubscribe?.();
+	}
 
-	const retryObserver = new MutationObserver(runThrottle);
+	function tryOnce() {
+		if (stopped) {
+			return;
+		}
+		if (attempt()) {
+			dispose();
+		}
+	}
 
-	retryObserver.observe(document.body, {
-		childList: true,
-		subtree: true,
-	});
-	runThrottle();
-
-	return retryObserver.disconnect.bind(retryObserver);
+	tryOnce();
+	if (!stopped) {
+		unsubscribe = source(tryOnce);
+		// A source may notify synchronously before returning its unsubscribe.
+		if (stopped) {
+			unsubscribe();
+		}
+	}
+	return dispose;
 }

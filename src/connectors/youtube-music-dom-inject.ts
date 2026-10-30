@@ -10,7 +10,11 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
+import {
+	onMutations,
+	runWithCleanup,
+	untilReady,
+} from '@/core/content/page-lifecycle';
 
 runWithCleanup(() => {
 	const sendData = () => {
@@ -62,7 +66,10 @@ runWithCleanup(() => {
 
 	// This script only runs on YouTube Music, so the player is expected
 	// eventually, but the redesigned player can render after page load.
-	const stopRetrying = retryUntil(tryAttach, 2000);
+	const stopRetrying = untilReady(
+		tryAttach,
+		onMutations(document.body, 2000),
+	);
 
 	return () => {
 		// remove the subscribers added by this extension from the array.

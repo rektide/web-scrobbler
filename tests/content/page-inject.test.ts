@@ -129,6 +129,27 @@ describe('Deezer readiness polling', () => {
 		expect(vi.getTimerCount()).toBe(0);
 		vi.advanceTimersByTime(1007 * 20);
 		expect(warn).toHaveBeenCalledTimes(1);
+		const api = createDeezer();
+		Object.assign(page, api);
+		vi.advanceTimersByTime(1007);
+		expect(api.Events.subscribe).not.toHaveBeenCalled();
+	});
+
+	it('still attaches on the sixth and final retry', async () => {
+		const warn = vi
+			.spyOn(console, 'warn')
+			.mockImplementation(() => undefined);
+		await import('@/connectors/deezer-dom-inject');
+		vi.advanceTimersByTime(1007 * 5);
+		const api = createDeezer();
+		Object.assign(page, api);
+		vi.advanceTimersByTime(1007);
+		expect(api.Events.subscribe).toHaveBeenCalledTimes(2);
+		expect(warn).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1000);
+		expect(vi.getTimerCount()).toBe(0);
+		page.cleanup?.();
+		expect(api.Events.unsubscribe).toHaveBeenCalledTimes(2);
 	});
 
 	it('does not attach after cleanup during readiness polling', async () => {
@@ -202,17 +223,47 @@ function stubDocument() {
 		getElementById: vi.fn().mockReturnValue(null),
 		querySelector: vi.fn().mockReturnValue(null),
 	});
-	vi.stubGlobal(
-		'MutationObserver',
-		class {
-			observe = vi.fn();
-			disconnect = vi.fn();
-		},
-	);
+	const observers: PageMutationObserver[] = [];
+	class PageMutationObserver {
+		callback: () => void;
+		observe = vi.fn();
+		disconnect = vi.fn();
+		constructor(callback: () => void) {
+			this.callback = callback;
+			observers.push(this);
+		}
+	}
+	vi.stubGlobal('MutationObserver', PageMutationObserver);
+	return observers;
 }
 
 describe('JWPlayer subscription cleanup', () => {
-	beforeEach(stubDocument);
+	it('attaches to a late SDK without DOM mutations and stops polling', async () => {
+		await import('@/connectors/jwplayer-dom-inject');
+		expect(vi.getTimerCount()).toBe(1);
+		const player = { on: vi.fn(), off: vi.fn() };
+		Object.assign(page, { jwplayer: () => player });
+		vi.advanceTimersByTime(1999);
+		expect(player.on).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(player.on).toHaveBeenCalledTimes(2);
+		expect(vi.getTimerCount()).toBe(0);
+		vi.advanceTimersByTime(10000);
+		expect(player.on).toHaveBeenCalledTimes(2);
+		page.cleanup?.();
+		expect(player.off).toHaveBeenCalledTimes(2);
+	});
+
+	it('waits for methods on a partially initialized player without DOM mutations', async () => {
+		const player = {};
+		Object.assign(page, { jwplayer: () => player });
+		await import('@/connectors/jwplayer-dom-inject');
+		const on = vi.fn();
+		Object.assign(player, { on, off: vi.fn() });
+		vi.advanceTimersByTime(2000);
+		expect(on).toHaveBeenCalledTimes(2);
+		expect(vi.getTimerCount()).toBe(0);
+	});
 
 	it('allows reinjection after discovering a player without on/off methods', async () => {
 		Object.assign(page, { jwplayer: () => ({}) });
@@ -224,6 +275,7 @@ describe('JWPlayer subscription cleanup', () => {
 		vi.resetModules();
 		await import('@/connectors/jwplayer-dom-inject');
 		expect(player.on).toHaveBeenCalledTimes(2);
+		expect(vi.getTimerCount()).toBe(0);
 		page.cleanup?.();
 		expect(player.off).toHaveBeenCalledWith(
 			'play',
@@ -238,6 +290,44 @@ describe('JWPlayer subscription cleanup', () => {
 	it('cleans up safely before the player global appears', async () => {
 		await import('@/connectors/jwplayer-dom-inject');
 		expect(() => page.cleanup?.()).not.toThrow();
+		const player = { on: vi.fn(), off: vi.fn() };
+		Object.assign(page, { jwplayer: () => player });
+		vi.advanceTimersByTime(10000);
+		expect(player.on).not.toHaveBeenCalled();
+		expect(vi.getTimerCount()).toBe(0);
+	});
+});
+
+describe('Telegram K controller discovery', () => {
+	it('preserves mutation wake-ups even though readiness is a global condition', async () => {
+		const observers = stubDocument();
+		await import('@/connectors/telegram-k-dom-inject');
+		const controller = {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		};
+		Object.assign(page, { appMediaPlaybackController: controller });
+		vi.advanceTimersByTime(10000);
+		expect(controller.addEventListener).not.toHaveBeenCalled();
+		observers[0].callback();
+		expect(controller.addEventListener).toHaveBeenCalledTimes(2);
+		expect(observers[0].disconnect).toHaveBeenCalledTimes(1);
+		page.cleanup?.();
+		expect(controller.removeEventListener).toHaveBeenCalledTimes(2);
+	});
+
+	it('does not attach from a trailing mutation after cleanup', async () => {
+		const observers = stubDocument();
+		await import('@/connectors/telegram-k-dom-inject');
+		observers[0].callback();
+		vi.advanceTimersByTime(20);
+		observers[0].callback();
+		page.cleanup?.();
+		const controller = { addEventListener: vi.fn() };
+		Object.assign(page, { appMediaPlaybackController: controller });
+		vi.advanceTimersByTime(1000);
+		expect(controller.addEventListener).not.toHaveBeenCalled();
+		expect(vi.getTimerCount()).toBe(0);
 	});
 });
 
@@ -275,24 +365,30 @@ describe('Eggs subscription cleanup', () => {
 
 describe('YouTube Music discovery interval', () => {
 	it('retries at 2000 ms rather than 5000 ms', async () => {
-		stubDocument();
-		const callbacks: Array<() => void> = [];
-		vi.stubGlobal(
-			'MutationObserver',
-			class {
-				observe = vi.fn();
-				disconnect = vi.fn();
-				constructor(callback: () => void) {
-					callbacks.push(callback);
-				}
-			},
-		);
+		const observers = stubDocument();
 		await import('@/connectors/youtube-music-dom-inject');
 		expect(document.getElementById).toHaveBeenCalledTimes(1);
-		callbacks[1]();
-		vi.advanceTimersByTime(1999);
-		expect(document.getElementById).toHaveBeenCalledTimes(1);
-		vi.advanceTimersByTime(1);
+		observers[1].callback();
 		expect(document.getElementById).toHaveBeenCalledTimes(2);
+		observers[1].callback();
+		vi.advanceTimersByTime(1999);
+		expect(document.getElementById).toHaveBeenCalledTimes(2);
+		vi.advanceTimersByTime(1);
+		expect(document.getElementById).toHaveBeenCalledTimes(3);
+	});
+
+	it('does not reattach its metadata observer from a trailing mutation after cleanup', async () => {
+		const observers = stubDocument();
+		await import('@/connectors/youtube-music-dom-inject');
+		observers[1].callback();
+		vi.advanceTimersByTime(20);
+		observers[1].callback();
+		page.cleanup?.();
+		vi.mocked(document.getElementById).mockReturnValue({} as HTMLElement);
+		vi.advanceTimersByTime(2000);
+		expect(observers[0].observe).not.toHaveBeenCalled();
+		expect(document.getElementById).toHaveBeenCalledTimes(2);
+		expect(observers[0].disconnect).toHaveBeenCalledTimes(1);
+		expect(observers[1].disconnect).toHaveBeenCalledTimes(1);
 	});
 });
