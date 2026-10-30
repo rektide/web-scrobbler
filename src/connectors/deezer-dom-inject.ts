@@ -10,30 +10,28 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { debugLog, runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
-	initConnector();
+runWithCleanup(() => {
+	let retries = 0;
+	const retryTimer = setInterval(() => {
+		retries++;
+		tryAttach();
+	}, 1007);
+	tryAttach();
 
-	function initConnector() {
-		let retries = 0;
+	function tryAttach() {
 		if (
 			'dzPlayer' in window &&
 			window.dzPlayer &&
 			'Events' in window &&
 			window.Events
 		) {
+			clearInterval(retryTimer);
 			addEventListeners();
-		} else if (retries < 6) {
-			window.setTimeout(function () {
-				initConnector();
-				retries++;
-			}, 1007);
-		} else {
-			Util.debugLog('Failed to initialize deezer connector!', 'warn');
+		} else if (retries >= 6) {
+			clearInterval(retryTimer);
+			debugLog('Failed to initialize deezer connector!', 'warn');
 		}
 	}
 
@@ -152,7 +150,7 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 		}
 
 		if (!trackInfo) {
-			Util.debugLog(
+			debugLog(
 				`Unable to load track info for ${mediaType} media type`,
 				'warn',
 			);
@@ -217,6 +215,7 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 	}
 
 	return () => {
+		clearInterval(retryTimer);
 		cleanupEventListeners();
 	};
-})();
+});

@@ -1,4 +1,4 @@
-export {};
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
 interface CurrentChannel {
 	artist: string;
@@ -27,11 +27,7 @@ declare global {
 	}
 }
 
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	window.cleanup();
-}
-
-window.cleanup = (() => {
+runWithCleanup(() => {
 	function getArtwork(data: Channel | CurrentChannel) {
 		if ('img' in data) {
 			return data.img;
@@ -75,4 +71,4 @@ window.cleanup = (() => {
 	return () => {
 		observer.disconnect();
 	};
-})();
+});

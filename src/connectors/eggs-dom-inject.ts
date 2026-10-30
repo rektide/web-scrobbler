@@ -10,12 +10,9 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => void }).cleanup = (() => {
+runWithCleanup(() => {
 	interface Player {
 		addEventListener: (
 			_: string,
@@ -40,6 +37,7 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 	}
 
 	const isArtistPage = window.location.href.includes('/artist/');
+	let attached = false;
 	let frameID = '';
 	let currentTime = 0;
 	let duration = 0;
@@ -64,6 +62,7 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 			'onStateChange',
 			onYoutubeSongStateChange,
 		);
+		attached = true;
 	}
 
 	function toggleExternalPlayer(mutationList: MutationRecord[]) {
@@ -302,7 +301,7 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 		videoFrameCleanUp();
 		observerCleanUp();
 		window.removeEventListener('message', onMessage);
-		if (!isArtistPage || !('player' in window)) {
+		if (!attached || !('player' in window)) {
 			return;
 		}
 		(window.player as Player).removeEventListener(
@@ -310,4 +309,4 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 			onYoutubeSongStateChange,
 		);
 	};
-})();
+});

@@ -1,3 +1,5 @@
+import { runWithCleanup } from '@/core/content/page-lifecycle';
+
 enum State {
 	Waiting = 'WAITING',
 	Rejected = 'REJECTED',
@@ -5,13 +7,25 @@ enum State {
 	Confirmed = 'CONFIRMED',
 }
 
-declare interface Window {
-	wsState: () => State;
-	setWSState: (newState: State) => void;
+declare global {
+	interface Window {
+		wsState: () => State;
+		setWSState: (newState: State) => void;
+	}
 }
 
-setInterval(() => {
-	if ((window as Window).wsState() === State.Accepted) {
+runWithCleanup(() => {
+	const approvalTimer = setInterval(tryConfirm, 1000);
+	tryConfirm();
+
+	function tryConfirm() {
+		if (
+			typeof window.wsState !== 'function' ||
+			window.wsState() !== State.Accepted
+		) {
+			return false;
+		}
+
 		const search = new URLSearchParams(window.location.search);
 		window.postMessage(
 			{
@@ -22,6 +36,12 @@ setInterval(() => {
 			},
 			'*',
 		);
-		(window as Window).setWSState(State.Confirmed);
+		window.setWSState(State.Confirmed);
+		clearInterval(approvalTimer);
+		return true;
 	}
-}, 1000);
+
+	return () => {
+		clearInterval(approvalTimer);
+	};
+});

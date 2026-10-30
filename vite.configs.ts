@@ -116,7 +116,7 @@ export const buildStart: UserConfig = {
 		}),
 		compileConnectors({
 			isDev: isDev(),
-			watchDirectory: 'src/connectors/',
+			watchDirectory: ['src/connectors/', 'src/core/content/'],
 		}),
 		minifyImages({ isDev: isDev() }),
 	],

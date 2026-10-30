@@ -54,7 +54,7 @@ const watcher: FSWatcher | null = null;
  * for the browser that is currently the build target
  */
 export default function compileConnectors(options: {
-	watchDirectory: string;
+	watchDirectory: string | string[];
 	isDev: boolean;
 }): PluginOption {
 	return {

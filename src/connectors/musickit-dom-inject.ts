@@ -10,14 +10,9 @@
  * @returns a cleanup function that cleans up event listeners and similar for a future overriding script.
  */
 
-// cleanup previous script
-if ('cleanup' in window && typeof window.cleanup === 'function') {
-	(window as unknown as { cleanup: () => void }).cleanup();
-}
+import { runWithCleanup } from '@/core/content/page-lifecycle';
 
-(window as unknown as { cleanup: () => Promise<void> }).cleanup = (() => {
-	addEventListeners();
-
+runWithCleanup(() => {
 	interface MusicKitWindow {
 		MusicKit: {
 			Events: {
@@ -48,70 +43,66 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 		isPlaying: boolean;
 	}
 
-	async function addEventListeners() {
+	// Set by the poll below once the MusicKit instance is available.
+	// Event listeners only fire after it is set, but every reader still
+	// guards so a cleanup before that point cannot throw.
+	let instance: MusicKitInstance | null = null;
+
+	const retryTimer = setInterval(tryAttach, 100);
+	tryAttach();
+
+	function tryAttach() {
+		const inst = (
+			window as unknown as MusicKitWindow
+		).MusicKit?.getInstance?.();
+		if (!inst) {
+			return;
+		}
+
+		clearInterval(retryTimer);
+		instance = inst.player ?? inst;
+		addEventListeners();
+	}
+
+	function addEventListeners() {
+		if (!instance) {
+			return;
+		}
+
 		const Events = (window as unknown as MusicKitWindow).MusicKit.Events;
-		const instance = await getInstance();
 		instance.addEventListener(Events.metadataDidChange, sendEvent);
 		instance.addEventListener(Events.playbackStateDidChange, sendEvent);
 		instance.addEventListener(Events.nowPlayingItemDidChange, sendEvent);
 		sendEvent();
 	}
 
-	async function getInstance() {
-		const api = (window as unknown as MusicKitWindow).MusicKit;
-
-		const initInstance = api?.getInstance();
-		// If the instance is already available, return it immediately
-		if (initInstance) {
-			return initInstance?.player ?? initInstance;
+	function sendEvent() {
+		if (!instance) {
+			return;
 		}
 
-		// Otherwise, poll until it is available
-		let i = 0;
-		return new Promise<MusicKitInstance>((resolve, reject) => {
-			const interval = setInterval(() => {
-				const instance = api?.getInstance();
-				if (instance) {
-					clearInterval(interval);
-					resolve(instance?.player ?? instance);
-					return;
-				}
-				if (i++ > 100) {
-					clearInterval(interval);
-					reject(new Error('MusicKit instance not found'));
-				}
-			}, 100);
-		});
+		window.postMessage(
+			{
+				sender: 'web-scrobbler',
+				type: 'MUSICKIT_STATE',
+				trackInfo: getTrackInfo(instance),
+				isPlaying: instance.isPlaying,
+			},
+			'*',
+		);
 	}
 
-	function sendEvent() {
-		getTrackInfo().then((trackInfo) => {
-			instanceIsPlaying().then((isPlaying) => {
-				window.postMessage(
-					{
-						sender: 'web-scrobbler',
-						type: 'MUSICKIT_STATE',
-						trackInfo,
-						isPlaying,
-					},
-					'*',
-				);
-			});
-		});
-	}
-
-	async function getTrackInfo() {
-		const instance = await getInstance();
-		const item = instance.nowPlayingItem;
+	function getTrackInfo(inst: MusicKitInstance) {
+		const item = inst.nowPlayingItem;
 		return {
 			album: item?.albumName,
 			track: item?.title,
 			artist: item?.artistName,
 			albumArtist: item?.container?.attributes?.artistName,
 			trackArt: getArtwork(item?.artworkURL ?? ''),
-			duration: instance.currentPlaybackDuration,
+			duration: inst.currentPlaybackDuration,
 			uniqueID: item?.id,
-			currentTime: instance.currentPlaybackTime,
+			currentTime: inst.currentPlaybackTime,
 		};
 	}
 
@@ -119,15 +110,15 @@ if ('cleanup' in window && typeof window.cleanup === 'function') {
 		return url.replace('{w}x{h}bb', '256x256bb');
 	}
 
-	async function instanceIsPlaying() {
-		return (await getInstance()).isPlaying;
-	}
+	return () => {
+		clearInterval(retryTimer);
+		if (!instance) {
+			return;
+		}
 
-	return async () => {
 		const Events = (window as unknown as MusicKitWindow).MusicKit.Events;
-		const instance = await getInstance();
 		instance.removeEventListener(Events.metadataDidChange, sendEvent);
 		instance.removeEventListener(Events.playbackStateDidChange, sendEvent);
 		instance.removeEventListener(Events.nowPlayingItemDidChange, sendEvent);
 	};
-})();
+});

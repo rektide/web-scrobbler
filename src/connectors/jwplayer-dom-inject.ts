@@ -1,4 +1,4 @@
-export {};
+import { retryUntil, runWithCleanup } from '@/core/content/page-lifecycle';
 
 /**
  * This script runs in non-isolated environment (eg. internet archive itself)
@@ -45,12 +45,9 @@ type JwplayerPlaylistItem = {
 	artist: string;
 };
 
-if (typeof window.cleanup === 'function') {
-	window.cleanup();
-}
-
-window.cleanup = (() => {
+runWithCleanup(() => {
 	let player: JwplayerApi;
+	let attached = false;
 
 	const sendData = () => {
 		window.postMessage(
@@ -72,25 +69,29 @@ window.cleanup = (() => {
 		);
 	};
 
-	// Wait until the player is loaded
-	const init = () => {
+	// Wait until the player is loaded and ready for event subscriptions.
+	const stopRetrying = retryUntil(() => {
 		if (!window.jwplayer) {
-			return;
+			return false;
 		}
 		player = window.jwplayer();
 
-		if (player.on) {
-			player.on('play', sendData);
-			player.on('pause', sendData);
-			clearInterval(timer);
+		if (!player.on) {
+			return false;
 		}
-	};
-	const timer = setInterval(init, 2000);
-	init();
+
+		player.on('play', sendData);
+		player.on('pause', sendData);
+		attached = true;
+		return true;
+	}, 2000);
 
 	return () => {
-		clearInterval(timer);
+		stopRetrying();
+		if (!attached) {
+			return;
+		}
 		player.off('play', sendData);
 		player.off('pause', sendData);
 	};
-})();
+});
