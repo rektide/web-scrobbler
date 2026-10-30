@@ -1,7 +1,7 @@
 ---
 type: Assessment
 title: Accepted page-world lifecycle pattern — departing assessment
-description: Faithful port of the operator-approved throttle and retryUntil, verified caller compatibility and standalone build grounding, and the remaining lifecycle limits and upstream novelty of the consolidated migration.
+description: Accepted lifecycle port and build grounding, followed by round-2 readiness polling, attachment cleanup, regression tests and development-watch repairs, with the frozen generation-barrier issue still an upstream precondition.
 resource: /doc/consolidated1.sol56x.md
 status: draft
 author: 'model:openai/gpt-6.1-sol#xhigh'
@@ -10,7 +10,7 @@ generated:
     by: 'model:openai/gpt-6.1-sol#xhigh'
 sources:
     - resource: opencode://ses_e75ceb8aaffeVHdqHMb9ed07QL
-      title: Port the accepted pattern, assess lifecycle tradeoffs, and verify all connector imports, independent build outputs and harness-provided sharing for the follow-up
+      title: Port and assess the accepted pattern, ground independent connector builds, then implement and verify round-2 review findings without changing the frozen helper bodies
     - resource: opencode://ses_e76ab1d35ffe5rfIc6T3xll18h
       title: Commission the consolidated lifecycle update and departing assessment under the operator-frozen design
     - resource: /src/core/content/page-lifecycle.ts
@@ -34,7 +34,7 @@ sources:
     - resource: /scripts/compile-connectors.ts
       title: Exact esbuild compilation command and connector entry glob
     - resource: /vite.configs.ts
-      title: Connector-only development watch directory
+      title: Original connector-only watch directory and round-2 addition of the shared core directory
     - resource: /src/connectors/connector.d.ts
       title: Ambient connector globals and type-only references, not runtime core imports
     - resource: /src/core/content/main.ts
@@ -45,6 +45,14 @@ sources:
       title: Connector.injectScript delegates loading of a separate page-world artifact
     - resource: /src/core/content/util.ts
       title: Page-world loading via script.src rather than an ES module import between connectors
+    - resource: /src/connectors/eggs-dom-inject.ts
+      title: Round-2 attachment tracking repairs the inverted non-artist player-listener cleanup
+    - resource: /tests/content/page-lifecycle.test.ts
+      title: Ten committed fake-time tests pin the accepted helper surface and leading/trailing/disconnect contract
+    - resource: /tests/content/page-inject.test.ts
+      title: Fourteen committed tests exercise polling, cleanup, partial initialization, reinjection and the YouTube Music interval
+    - resource: /tests/scripts/compile-connectors.test.ts
+      title: Two committed mocked-plugin tests cover shared-core watch routing and production watcher exclusion
 tags:
     - page-world
     - lifecycle
@@ -53,6 +61,13 @@ tags:
 ---
 
 # Accepted page-world lifecycle pattern — departing assessment
+
+**Current tip: [Round 2](#round-2-review-findings-incorporated).** The earlier
+sections preserve the round-1 assessment and build investigation. Their
+six-retry-site count, exported throttle, 5000 ms YouTube Music interval,
+missing tests, cleanup defects and connector-only watch description are
+historical where superseded by the round-2 section. No frozen function
+body was changed.
 
 The shared module is worth keeping. It gives eleven independently bundled
 page scripts one maintained cleanup idiom, and six of them one readable
@@ -376,3 +391,139 @@ as an unsolicited improvement.
 
 The code and this assessment are separate coherent commits on
 `consolidated-20261029`; no push is part of this delivery.
+
+## Round 2: review findings incorporated
+
+The review turns the readiness distinction into an implemented split,
+rather than treating every wait as a DOM observer. The shared module and
+eleven independent consumers remain; only **three** now use `retryUntil`.
+The accepted `throttle` and `retryUntil` bodies still match the frozen
+source at `871e7c97` exactly, including the allowed trailing-after-disconnect
+behavior. No generation guard, public cancellation handle or hidden
+cancellation substitute was added.
+
+### Coherent implementation commits
+
+| Commit     | Change                                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `6930d189` | `fix: poll page globals within connector cleanup` — three polling sites and nine regression tests                                                         |
+| `b2b9d6cd` | `fix: clean up only attached page player listeners` — JWPlayer/Eggs attachment flags and four more tests                                                  |
+| `e099f40c` | `test: pin the accepted page lifecycle contract` — private throttle, 2000 ms YouTube Music interval, ten lifecycle tests and the interval regression test |
+| `e36e8edd` | `fix: rebuild connectors when shared page code changes` — watch both source directories and add two routing tests                                         |
+
+### Readiness split and incorporated repairs
+
+- **Webhook auth:** [`webhook-auth-dom-inject.ts:17–26`](/src/connectors/webhook-auth-dom-inject.ts)
+  starts a 1000 ms interval and attempts immediately, but first checks
+  `typeof window.wsState === 'function'`. A missing getter now leaves the
+  poll alive and allows setup to return its cleanup instead of throwing
+  before registration. Confirmation clears the interval (line 40), as does
+  cleanup (line 45). The user can approve on a DOM-quiet page at any later
+  time; no mutation is needed and reinjection does not stack polls.
+- **Deezer:** [`deezer-dom-inject.ts:15–35`](/src/connectors/deezer-dom-inject.ts)
+  checks immediately, then polls every 1007 ms with a counter owned by the
+  generation. The bound means **six retries after the initial attempt**:
+  seven readiness checks, with a warning and stop after the last failure.
+  This restores the original intended retry budget without its counter
+  reset bug. Success, exhaustion and cleanup all clear the interval. The
+  exhausted path now genuinely reaches page-world `debugLog`.
+- **MusicKit:** [`musickit-dom-inject.ts:49–65`](/src/connectors/musickit-dom-inject.ts)
+  checks immediately and polls every 100 ms until an instance exists.
+  Optional method chaining also waits safely when `MusicKit` exists but
+  `getInstance` does not yet. Success clears the interval before attaching
+  listeners; cleanup clears it before removing listeners. This restores
+  time-driven discovery, not the old promise structure or finite attempt
+  budget: the current wait remains unbounded until readiness or cleanup.
+- **JWPlayer:** [`jwplayer-dom-inject.ts:49–50,83–95`](/src/connectors/jwplayer-dom-inject.ts)
+  records `attached` only after both `on` calls. Cleanup disconnects retry
+  observation, then returns unless attachment completed. An object with
+  no `on`/`off` methods no longer aborts the next generation's setup.
+- **Eggs:** [`eggs-dom-inject.ts:40,60–66,300–310`](/src/connectors/eggs-dom-inject.ts)
+  records actual attachment on the non-artist branch and removes that
+  listener only when attached. An artist-page cleanup no longer attempts
+  to remove a listener that this generation never installed.
+- **YouTube Music:** [`youtube-music-dom-inject.ts:65`](/src/connectors/youtube-music-dom-inject.ts)
+  now uses 2000 ms, matching the accepted source. Its selectors and
+  observer behavior are otherwise unchanged.
+- **Module surface:** [`page-lifecycle.ts:52`](/src/core/content/page-lifecycle.ts)
+  makes `throttle` private. The exported functions are now only
+  `debugLog`, `runWithCleanup` and `retryUntil`; no consumer needed changes
+  for removal of the speculative export.
+- **Development rebuilds:** [`vite.configs.ts:117–120`](/vite.configs.ts)
+  passes both `src/connectors/` and `src/core/content/` to the connector
+  watcher. [`compile-connectors.ts:56–58,71–81`](/scripts/compile-connectors.ts)
+  now accepts a string or array, so shared lifecycle edits use the same
+  connector rebuild path. No production entry glob or chunking policy
+  changed.
+
+Global assignment and user approval have no necessary causal relationship
+to body child-list mutations. Polling those three sites fixes a liveness
+failure, not just performance or style. YouTube Music remains genuinely
+DOM-discovery-driven. Telegram K and JWPlayer retain the requested
+`retryUntil` mechanism. **I do not agree that JWPlayer thereby becomes a
+DOM-discovery site:** its predicate still checks `window.jwplayer` and
+`player.on`, so quiet global readiness can still starve. I kept the
+explicitly requested mechanism, recorded that caveat, and did not silently
+move another connector to polling.
+
+### Committed tests and verification
+
+- [`tests/content/page-lifecycle.test.ts`](/tests/content/page-lifecycle.test.ts)
+  has ten tests using Vitest fake timers and a small observer stub. Tests
+  reach the private throttle through the real `retryUntil` observer
+  callback: immediate/elapsed leading runs, the exact interval boundary,
+  one trailing request per burst, firing at window close rather than
+  extending the deadline, reopening scheduling, and clearing an old timer
+  on an elapsed leading call. Initial/trailing success and external
+  cleanup disconnect observation. A separate assertion deliberately allows
+  **one already queued trailing attempt after disconnect**, with no loop.
+  The suite also checks the narrowed exports and cleanup-before-setup order.
+- [`tests/content/page-inject.test.ts`](/tests/content/page-inject.test.ts)
+  has fourteen tests importing the real connector modules with page-global
+  stubs. They exercise missing and late globals without DOM mutation,
+  polling cleanup and webhook reinjection, Deezer's real bound and warning,
+  MusicKit partial SDK readiness, JWPlayer partial-player reinjection,
+  Eggs' two branches and the 2000 ms YouTube Music boundary.
+- [`tests/scripts/compile-connectors.test.ts`](/tests/scripts/compile-connectors.test.ts)
+  has two mocked-plugin tests: a helper change delivered through the shared
+  core watch entry invokes connector compilation, while production starts
+  no watcher. This is routing evidence, not a full running-dev-server test.
+- At each code stage: both TypeScript projects, explicit-file ESLint and
+  Prettier, the full `npx vitest run` suite and the esbuild connector smoke
+  passed. Full-suite totals progressed through **2170, 2174, 2185 and
+  2187**, ending at **2187/2187 across twelve files**. One initial empty
+  mock callback lint violation was corrected before the first commit;
+  formatting was then checked successfully.
+- The final build still produces **374 independent entry artifacts**,
+  zero output import edges, eleven inlined lifecycle consumers, and no
+  orphan `page-lifecycle.js`. Only the three remaining retry consumers
+  contain `throttle`/`retryUntil`; the three polling bundles contain their
+  interval setup and cleanup instead. A source-body comparison against
+  `871e7c97` confirmed both frozen bodies unchanged; `runWithCleanup` and
+  `debugLog` also remain unchanged from the pre-review tip.
+
+No authenticated live-site verification or full browser extension build
+was performed; these receipts are type, lint, unit and connector-bundling
+evidence. This assessment is separately checked with the Markdown tools.
+
+### Remaining upstream precondition and limits
+
+**Reviewer upstream precondition, deliberately not implemented here:**
+add an active-generation/settled guard to prevent a queued `retryUntil`
+attempt from attaching resources after disposal before upstreaming this
+as a strong lifecycle abstraction. That requires a separately approved
+change to the frozen body and an updated test expectation. This branch
+currently pins the accepted zombie behavior honestly; passing that test
+does not satisfy the reviewer's precondition or make cleanup a generation
+barrier. No public throttle stop handle is needed to explain that separate
+proposal.
+
+Other earlier limits remain where not explicitly repaired: replacing SDK
+objects or player nodes after attachment is not reconciled, Deezer's
+deferred message timeouts are not owned by the readiness interval, and
+arbitrary throwing host APIs or partial subscription failures are not
+generically recovered. The watcher path fix also does not repair the
+pre-existing shadowed watcher variable in
+`scripts/compile-connectors.ts:50,71,92`: the teardown hook still refers to
+the outer null handle. That is a separate watcher-lifecycle issue, not
+something the new mocked routing tests claim to solve.
