@@ -47,6 +47,7 @@ type JwplayerPlaylistItem = {
 
 runWithCleanup(() => {
 	let player: JwplayerApi;
+	let attached = false;
 
 	const sendData = () => {
 		window.postMessage(
@@ -81,13 +82,13 @@ runWithCleanup(() => {
 
 		player.on('play', sendData);
 		player.on('pause', sendData);
+		attached = true;
 		return true;
 	}, 2000);
 
 	return () => {
 		stopRetrying();
-		// The player is never assigned if it did not load before cleanup.
-		if (typeof player === 'undefined') {
+		if (!attached) {
 			return;
 		}
 		player.off('play', sendData);

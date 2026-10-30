@@ -8,6 +8,8 @@ function createPage() {
 			search: '?applicationName=Example&userApiUrl=https://example.com/api',
 		},
 		postMessage: vi.fn(),
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
 		setTimeout,
 	};
 }
@@ -191,5 +193,81 @@ describe('MusicKit readiness polling', () => {
 		await import('@/connectors/musickit-dom-inject');
 		expect(api.instance.addEventListener).toHaveBeenCalledTimes(3);
 		expect(vi.getTimerCount()).toBe(0);
+	});
+});
+
+function stubDocument() {
+	vi.stubGlobal('document', {
+		body: {},
+		querySelector: vi.fn().mockReturnValue(null),
+	});
+	vi.stubGlobal(
+		'MutationObserver',
+		class {
+			observe = vi.fn();
+			disconnect = vi.fn();
+		},
+	);
+}
+
+describe('JWPlayer subscription cleanup', () => {
+	beforeEach(stubDocument);
+
+	it('allows reinjection after discovering a player without on/off methods', async () => {
+		Object.assign(page, { jwplayer: () => ({}) });
+		await import('@/connectors/jwplayer-dom-inject');
+		expect(() => page.cleanup?.()).not.toThrow();
+
+		const player = { on: vi.fn(), off: vi.fn() };
+		Object.assign(page, { jwplayer: () => player });
+		vi.resetModules();
+		await import('@/connectors/jwplayer-dom-inject');
+		expect(player.on).toHaveBeenCalledTimes(2);
+		page.cleanup?.();
+		expect(player.off).toHaveBeenCalledWith(
+			'play',
+			player.on.mock.calls[0][1],
+		);
+		expect(player.off).toHaveBeenCalledWith(
+			'pause',
+			player.on.mock.calls[1][1],
+		);
+	});
+
+	it('cleans up safely before the player global appears', async () => {
+		await import('@/connectors/jwplayer-dom-inject');
+		expect(() => page.cleanup?.()).not.toThrow();
+	});
+});
+
+describe('Eggs subscription cleanup', () => {
+	beforeEach(stubDocument);
+
+	it('removes the listener attached on a non-artist page', async () => {
+		const player = {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		};
+		Object.assign(page, { player });
+		await import('@/connectors/eggs-dom-inject');
+		expect(player.addEventListener).toHaveBeenCalledTimes(1);
+		page.cleanup?.();
+		expect(player.removeEventListener).toHaveBeenCalledExactlyOnceWith(
+			'onStateChange',
+			player.addEventListener.mock.calls[0][1],
+		);
+	});
+
+	it('does not remove a player listener that was never attached on an artist page', async () => {
+		page.location.href = 'https://eggs.mu/artist/example';
+		const player = {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		};
+		Object.assign(page, { player });
+		await import('@/connectors/eggs-dom-inject');
+		page.cleanup?.();
+		expect(player.addEventListener).not.toHaveBeenCalled();
+		expect(player.removeEventListener).not.toHaveBeenCalled();
 	});
 });

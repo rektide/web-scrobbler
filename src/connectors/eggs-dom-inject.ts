@@ -37,6 +37,7 @@ runWithCleanup(() => {
 	}
 
 	const isArtistPage = window.location.href.includes('/artist/');
+	let attached = false;
 	let frameID = '';
 	let currentTime = 0;
 	let duration = 0;
@@ -61,6 +62,7 @@ runWithCleanup(() => {
 			'onStateChange',
 			onYoutubeSongStateChange,
 		);
+		attached = true;
 	}
 
 	function toggleExternalPlayer(mutationList: MutationRecord[]) {
@@ -299,7 +301,7 @@ runWithCleanup(() => {
 		videoFrameCleanUp();
 		observerCleanUp();
 		window.removeEventListener('message', onMessage);
-		if (!isArtistPage || !('player' in window)) {
+		if (!attached || !('player' in window)) {
 			return;
 		}
 		(window.player as Player).removeEventListener(
