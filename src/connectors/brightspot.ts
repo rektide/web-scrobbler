@@ -64,8 +64,17 @@ Connector.playerSelector = '.BrightspotPersistentPlayer';
 // The player polls a Cadence now-playing API per stream and writes the result
 // into the data-* spans below; those attributes are its stable output
 // contract, unlike the surrounding CSS classes. Song details are only filled
-// in for music streams; otherwise the bar falls back to the program name.
-Connector.trackSelector = ['[data-songinfo-song]', '[data-primary-info]'];
+// in for music streams; the `[data-songinfo-song]` span stays in the DOM but
+// empty during talk programming, so the program name is an explicit fallback
+// (a trackSelector array cannot express this: the first selector wins by
+// matching an element even when its text is empty).
+Connector.getTrack = () => {
+	return (
+		document.querySelector('[data-songinfo-song]')?.textContent?.trim() ||
+		document.querySelector('[data-primary-info]')?.textContent?.trim() ||
+		null
+	);
+};
 
 Connector.albumSelector = '[data-songinfo-album]';
 
@@ -85,9 +94,16 @@ Connector.getArtist = () => {
 
 Connector.isPlaying = () => {
 	// Howler drives the stream through Audio objects it never attaches to
-	// the DOM; each ps-stream element instead mirrors its playback state in
-	// a `state` attribute ("playing", "paused", "stopped").
-	return document.querySelector('ps-stream[state="playing"]') !== null;
+	// the DOM. Playback state is mirrored on the `state` attribute of the
+	// persistent player itself, and of a `ps-stream` card when a stream is
+	// started from one of those (live-verified on ksjd.org and
+	// mainepublic.org: the bar's play button only sets the outer player).
+	return (
+		document.querySelector('ps-stream[state="playing"]') !== null ||
+		document
+			.querySelector('ps-brightspot-persistent-player')
+			?.getAttribute('state') === 'playing'
+	);
 };
 
 Connector.getChannelId = getStreamName;
