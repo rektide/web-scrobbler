@@ -88,6 +88,18 @@ export const buildContent: UserConfig = {
 			output: {
 				entryFileNames: 'main.js',
 				extend: true,
+				// The manifest loads content/main.js as a classic content script,
+				// not a module. Evaluated as a classic script, the bundle's
+				// top-level declarations (e.g. `class MetadataFilter` from
+				// @web-scrobbler/metadata-filter) become global lexical bindings
+				// that shadow the window.* globals main.ts sets up for connector
+				// scripts (window.MetadataFilter, window.Util, ...), breaking
+				// every filter-using connector with "MetadataFilter.createFilter
+				// is not a function". Wrapping the bundle in an IIFE keeps the
+				// flat ES output format while scoping those declarations. The
+				// bundle has no exports, so nothing needs to escape the wrapper.
+				banner: '(function () {',
+				footer: '})();',
 			},
 		},
 	},
